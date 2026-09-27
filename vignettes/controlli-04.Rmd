@@ -1,0 +1,36 @@
+---
+title: "04 — Preparazione dati, routing e localizzazione"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{04 — Preparazione dati, routing e localizzazione}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# Preparare e controllare
+
+Lo Step 02 prepara i dati del questionario e le VAUX; lo Step 03 applica il controllo di routing al DAG canonico. L'assenza di una risposta può essere corretta per una domanda inattiva ed errata per una domanda attiva: la diagnosi dipende dalla posizione nel grafo e dalle modalità osservate.
+
+```{r routing-steps}
+source(file.path("scripts", "02_prepare_data.R"))
+source(file.path("scripts", "03_run_routing_check.R"))
+```
+
+Lo script `03_run_routing_check.R` salva `routing_check_results.rds`, `full_report.csv`, `summary_by_record.csv`, `summary_by_variable.csv` ed `execution_time.csv` in `output/routing-check/`. Leggere il rapporto dettagliato per le variabili coinvolte e i riepiloghi per individuare errori sistematici di metadati.
+
+# Validare la localizzazione
+
+`06_validate_violation_localization.R` confronta la localizzazione delle violazioni con un rapporto di riferimento quando questo è disponibile nella configurazione. Il confronto con una verità nota è distinto dal semplice conteggio degli errori riscontrati.
+
+```{r localization}
+source(file.path("scripts", "06_validate_violation_localization.R"))
+```
+
+Prima di attribuire una violazione al record, esaminare la mappatura degli item e le fonti esterne delle VAUX: una regola incoerente può produrre molti errori apparenti.

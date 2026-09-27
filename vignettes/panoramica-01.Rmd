@@ -1,0 +1,46 @@
+---
+title: "01 — Panoramica e flusso SSPICE"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{01 — Panoramica e flusso SSPICE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# Perché SSPICE
+
+SSPICE rappresenta le dipendenze logiche di un questionario mediante un grafo diretto aciclico (DAG). Usa il grafo per controllare i percorsi, localizzare incongruenze, costruire domini e regole formali, correggere record erronei e misurare il risultato. I valori mancanti hanno un ruolo: una domanda inattiva deve essere vuota, mentre una domanda attiva può richiedere un valore.
+
+# Flusso operativo
+
+```text
+Metadati di routing ──> DAG canonico ────────────────┐
+                           │                          │
+Dati + fonti esterne ──> dati preparati ──> controllo │
+                           │                    │     │
+                           └──> edit logici ──> DAG esteso
+                                                │
+                                correzione <────┘
+                                    │
+                           rapporto qualità
+
+DAG canonico ──> VARDOM / RULES ──> validazione Horn
+```
+
+I passi operativi si trovano in `scripts/`: `00_config.R` imposta percorsi e opzioni; `01_build_DAG.R` costruisce il grafo; `02_prepare_data.R` prepara i record; `03_run_routing_check.R` controlla il routing; `04_create_VARDOM_and_RULES.R` produce i vincoli; `05_validate_horn_theory.R` e `06_validate_violation_localization.R` verificano le proprietà; `09_build_extended_DAG.R`, `10_correct_data.R` e `11_correction_quality_report.R` completano il percorso di correzione e valutazione. Gli script 07 e 08 servono rispettivamente a dati sintetici e conteggio dei pattern ammissibili.
+
+```{r workflow}
+source(file.path("scripts", "00_config.R"))
+source(file.path("scripts", "01_build_DAG.R"))
+source(file.path("scripts", "02_prepare_data.R"))
+source(file.path("scripts", "03_run_routing_check.R"))
+```
+
+Eseguire i passi in ordine e controllare gli output intermedi prima di avviare la correzione. La qualità dei metadati determina quella delle diagnosi.

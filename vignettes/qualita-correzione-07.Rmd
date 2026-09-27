@@ -1,0 +1,38 @@
+---
+title: "07 — Rapporti e qualità della correzione"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{07 — Rapporti e qualità della correzione}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# Perché misurare il risultato
+
+Un algoritmo terminato non implica che tutti i record siano corretti. Lo Step 11 confronta dati originali e corretti, ricalcola il controllo finale sul DAG esteso e produce un rapporto di qualità. Usa anche il controllo iniziale, i record esatti donatori, il tempo di esecuzione e la provenienza dei donatori quando disponibili.
+
+```{r report-step}
+source(file.path("scripts", "11_correction_quality_report.R"))
+```
+
+Lo script legge `correction_result.rds` e `corrected_questionnaire_data.rds` dallo Step 10, nonché `prepared_data_with_logical_edits.rds` e `questionnaire_extended_DAG.rds` dallo Step 09. Produce `correction_quality_report.rds`, un rapporto HTML e tabelle CSV nella directory `correction_quality_output_dir` oppure nella sottodirectory `quality-report` dei risultati di correzione.
+
+# Come leggere il rapporto
+
+| Domanda | Evidenza da controllare |
+|:--|:--|
+| Quanti record risultano risolti? | Riepilogo dei record, distinti da quelli irrisolti |
+| Restano violazioni? | Confronto dei rapporti iniziale e finale per record e variabile |
+| Quali valori sono cambiati? | Tabelle delle modifiche e confronto per modalità di cambiamento |
+| I donatori erano ammissibili? | Provenienza e diagnostica del pool `EXACT` |
+| Le variabili vincolate sono rispettate? | Audit delle variabili immutabili e delle VAUX esogene |
+| Quanto costa il processo? | Tempo trascorso e riepilogo dell'esecuzione |
+
+Valutare separatamente il tasso di risoluzione e l'eventuale persistenza di errori. Un record può essere segnato come irrisolto; non considerarlo corretto sulla sola base di un valore modificato. Conservare l'output completo e i parametri del pilot per poter riprodurre il confronto.

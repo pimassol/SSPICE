@@ -1,0 +1,46 @@
+---
+title: "03 — Costruzione e analisi del DAG"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{03 — Costruzione e analisi del DAG}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# Dal routing al grafo
+
+`build_DAG()` legge il routing e produce il DAG canonico. `stop_on_cycle = TRUE` impedisce di proseguire con dipendenze cicliche; `analyze = TRUE` calcola diagnostiche strutturali. Lo script del progetto salva anche matrice di adiacenza, trasposta della matrice di incidenza, routing numerico e partizioni.
+
+```{r build-dag}
+source(file.path("scripts", "00_config.R"))
+dag <- SSPICE::build_DAG(
+  routing = config$routing_file,
+  separator = config$metadata_separator,
+  na_strings = config$missing_codes,
+  analyze = TRUE,
+  stop_on_cycle = TRUE,
+  max_paths_per_partition = config$max_paths_per_partition
+)
+names(dag)
+dag$graph_diagnostics
+```
+
+# Che cosa leggere
+
+I nodi rappresentano variabili e gruppi logici; gli archi rappresentano prerequisiti del percorso. Esaminare sorgenti, nodi isolati, partizioni e lunghezza dei cammini prima di attribuire ai dati le anomalie di routing. I gruppi OR e XOR sono rappresentati da variabili canoniche VOR e VXOR. Un grafo aciclico consente di valutare le dipendenze in un ordine coerente.
+
+```{r inspect-dag}
+source(file.path("scripts", "01_build_DAG.R"))
+dag <- readRDS(file.path(config$dag_output_dir, "questionnaire_DAG.rds"))
+str(dag$graph_diagnostics, max.level = 1)
+utils::head(dag$routes_numeric)
+```
+
+Se la costruzione fallisce, correggere i metadati e ricostruire il DAG prima di riutilizzare risultati derivati. Il DAG esteso con gli edit logici è generato separatamente nello Step 09.

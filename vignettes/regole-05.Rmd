@@ -1,0 +1,35 @@
+---
+title: "05 — Domini, regole e teoria di Horn"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{05 — Domini, regole e teoria di Horn}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# Rappresentazione formale
+
+Lo Step 04 ricava dal DAG canonico i domini di variabile e le regole di compatibilità. Gli output principali sono `output/rules/VARDOM.dat`, `RULES.dat` e `record_layout.csv`; `vardom.csv` e `rules_objects.rds` aiutano l'ispezione. SSPICE usa VOR e VXOR per i gruppi logici e non genera `STRUTT.dat` o `LISTE.dat`.
+
+```{r rules}
+source(file.path("scripts", "04_create_VARDOM_and_RULES.R"))
+stopifnot(all(file.exists(file.path(config$rules_output_dir,
+                                    c("VARDOM.dat", "RULES.dat", "record_layout.csv")))))
+```
+
+# Verifica della teoria
+
+Lo Step 05 usa DAG, `RULES.dat` e mappatura degli item per validare le proprietà empiriche della teoria di Horn indotta. I controlli di chiusura e minimalità consentono di esaminare se le implicazioni formali rispecchiano le dipendenze previste. I test campionari sono governati da `n_random_closure_tests`, `max_seed_size` e dal seme nella configurazione: il loro esito va letto con i relativi parametri.
+
+```{r horn}
+source(file.path("scripts", "05_validate_horn_theory.R"))
+```
+
+Se si modifica il routing, rigenerare DAG, domini e regole prima di interpretare una nuova validazione.

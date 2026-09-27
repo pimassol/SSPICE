@@ -1,0 +1,184 @@
+---
+title: "02 — Metadati e sorgenti esterne"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{02 — Metadati e sorgenti esterne}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+
+# I file di ingresso
+
+| File | Funzione | Controllo preliminare |
+|:--|:--|:--|
+| `routing_file.csv` | Nodi, modalità e dipendenze di routing | Identificativi coerenti, nessun ciclo |
+| `vaux_rules.csv` | Definizioni delle variabili ausiliarie VAUX | Condizioni e modalità non contraddittorie |
+| `logical_edit_rules.csv` | Vincoli logici fra variabili | Modalità e operatori coerenti |
+| `items_mapping.csv` | Corrispondenza fra item di routing e colonne nei dati | Ogni item usato è mappato correttamente |
+| `data-raw/input/questionnaire_data.csv` | Risposte da verificare | Chiave record e codici mancanti concordati |
+| `data-raw/external/*.csv` | Informazioni aggiuntive per VAUX esogene | Chiave di raccordo e unicità alla granularità prevista |
+
+I metadati di routing, VAUX ed edit logici presenti in questo progetto usano il separatore `;`; `items_mapping.csv` usa la virgola. La configurazione esplicita questi percorsi, il separatore dei metadati, `missing_codes` e `record_id` (`DB030` nell'esempio incluso). Non dedurre lo schema dei file dal nome: verificare le colonne e la chiave rispetto alle regole effettive.
+
+```{r metadata-check}
+source(file.path("scripts", "00_config.R"))
+stopifnot(all(file.exists(c(config$routing_file, config$vaux_file,
+                            config$logical_edit_rules_file,
+                            config$items_mapping_file))))
+utils::head(utils::read.csv(config$items_mapping_file, check.names = FALSE))
+```
+
+# VAUX esogene e unità di osservazione
+
+Una VAUX che richiede informazioni individuali non può essere inferita da un file che contiene solo il rispondente di ciascuna famiglia. Nel progetto, `extfile3.csv` contiene `DB030` ed `EXIST_MINOR`: quest'ultimo segnala se nella famiglia esiste almeno un individuo con `PRESEN_B = 1` ed `ETAINT < 15`. Le regole VAUX devono riferirsi all'informazione esterna corretta, collegata con `DB030`.
+
+Le VAUX esogene attive mantengono il valore di origine durante la correzione; se diventano inattive per routing possono essere sbiancate a `NA`. Controllare valori assenti nelle fonti prima di interpretare un errore come risposta errata.
+
+
+# Costruire le modalità VAUX
+
+`vaux_rules.csv` contiene nove colonne senza intestazione, separate da
+`;`. Ogni riga contribuisce alla definizione di una modalità; più righe
+con lo stesso nome e la stessa modalità compongono la sua condizione.
+
+| Colonna | Significato |
+|:--|:--|
+| V1 | Nome della VAUX |
+| V2 | Modalità da assegnare quando la condizione è vera |
+| V3 | Variabile usata dalla riga |
+| V4, V5 | Eventuale nome della sorgente esterna, senza `.csv`, e chiave di raccordo |
+| V6 | Valore esatto; `BLANK` o `NA` per valore assente |
+| V7, V8 | Limiti *inclusivi* di un intervallo |
+| V9 | Operatore dopo la riga, oppure confronto che termina un calcolo |
+
+Per le condizioni logiche il parser apre automaticamente una parentesi
+all'inizio di ogni condizione e la chiude quando incontra `NULL`.
+
+| Token logico in V9 | Effetto |
+|:--|:--|
+| `AND`, `OR` | Collega la condizione della riga alla successiva |
+| `) AND (`, `) OR (` | Chiude il gruppo corrente e apre il successivo |
+| `NULL` | Chiude e valuta la condizione per la modalità della riga |
+| `IN(...)`, `NOT IN(...)` | Verifica appartenenza o non appartenenza; `BLANK` rappresenta il valore assente |
+
+Per esempio, la regola **solo logica**
+`A = 1 AND (D = 1 OR E = 3)` si rappresenta con:
+
+| V1 | V2 | V3 | V6 | V7 | V8 | V9 |
+|:--|--:|:--|:--|:--|:--|:--|
+| VAUX_ESEMPIO | 1 | A | 1 | . | . | `) AND (` |
+| VAUX_ESEMPIO | 1 | D | 1 | . | . | `OR` |
+| VAUX_ESEMPIO | 1 | E | 3 | . | . | `NULL` |
+
+Nel file effettivo, V4 e V5 sono vuote per variabili già presenti nei
+dati. Se V4 indica `extfile1`, `extfile2` o `extfile3`, V5
+indica la chiave (`DB030` nell'esempio del progetto).
+
+## Regole solo aritmetiche
+
+| Operazione | Token semplice in V9 | Raggruppamento in V9 |
+|:--|:--|:--|
+| Somma | `+` | `) + (` |
+| Sottrazione | `-` | `) - (` |
+| Moltiplicazione | `*` | `) * (` |
+| Divisione | `/` | `) / (` |
+
+L'ultima riga confronta il risultato con una costante numerica:
+`<n`, `<=n`, `>n`, `>=n`, `=n`, `==n` oppure
+`!=n`. Si possono anche indicare i confronti positivi o negativi
+(`<-2`, `>=0.5`). Il confronto chiude l'espressione e assegna
+la modalità V2 alle righe dei dati per cui è vero.
+
+Esempio **solo aritmetico**, `(A+B)*(C-D) >= 10`:
+
+| V1 | V2 | V3 | V9 |
+|:--|--:|:--|:--|
+| VAUX_ARIT | 1 | A | `+` |
+| VAUX_ARIT | 1 | B | `) * (` |
+| VAUX_ARIT | 1 | C | `-` |
+| VAUX_ARIT | 1 | D | `>=10` |
+
+Le colonne V4–V5 e V6–V8 sono vuote in questo esempio. Gli operatori
+semplici seguono la precedenza aritmetica di R; i token con parentesi
+chiudono un gruppo e ne aprono un altro.
+
+## Regole miste
+
+Per proseguire dopo il confronto con una condizione logica, scrivere
+**il confronto seguito da uno spazio e dal connettore**:
+`<10 AND`, `<10 ) AND (`, `>=5 ) OR (`,
+`=100 NULL`. Anche `OR` e `) OR (` sono ammessi.
+
+Esempio: `A < 10 AND (D = 1 OR E = 3)`.
+Questo confronto è stretto e funziona anche se A contiene decimali.
+
+| V1 | V2 | V3 | V6 | V7 | V8 | V9 |
+|:--|--:|:--|:--|:--|:--|:--|
+| VAUX_MISTA | 1 | A | . | . | . | `<10 ) AND (` |
+| VAUX_MISTA | 1 | D | 1 | . | . | `OR` |
+| VAUX_MISTA | 1 | E | 3 | . | . | `NULL` |
+
+Esempio aritmetico raggruppato con logica:
+`((A + B) * (C - D) / F >= 5) OR (E = 1 AND A = 2)`.
+
+| V1 | V2 | V3 | V6 | V7 | V8 | V9 |
+|:--|--:|:--|:--|:--|:--|:--|
+| VAUX_CALCOLO | 1 | A | . | . | . | `+` |
+| VAUX_CALCOLO | 1 | B | . | . | . | `) * (` |
+| VAUX_CALCOLO | 1 | C | . | . | . | `-` |
+| VAUX_CALCOLO | 1 | D | . | . | . | `) / (` |
+| VAUX_CALCOLO | 1 | F | . | . | . | `>=5 ) OR (` |
+| VAUX_CALCOLO | 1 | E | 1 | . | . | `AND` |
+| VAUX_CALCOLO | 1 | A | 2 | . | . | `NULL` |
+
+I valori mancanti nei calcoli producono condizioni non vere e lasciano
+la VAUX a `NA` se nessuna modalità si applica. I raggruppamenti
+disponibili chiudono un gruppo e ne aprono un altro: non forniscono
+parentesi liberamente annidabili. `NOT IN(...)` è previsto per
+l'appartenenza a insiemi; `NOT` e `XOR` generali fra predicati
+non sono supportati in modo affidabile. Verificare modalità sovrapposte
+e righe senza condizione vera prima di usare nuove regole sui dati reali.
+
+## Caso applicativo: VAUX del progetto
+
+Nel progetto, `VAUX7` deriva dal file esterno `extfile3.csv`. La
+chiave `DB030` collega ciascuna famiglia al valore `EXIST_MINOR`,
+calcolato sull'intera famiglia. Le sue due modalità sono definite da:
+
+```text
+VAUX7;1;EXIST_MINOR;extfile3;DB030;1;.;.;NULL
+VAUX7;2;EXIST_MINOR;extfile3;DB030;0;.;.;NULL
+```
+
+Non si può ricostruire `EXIST_MINOR` dal solo rispondente del
+questionario: si ottiene dalla presenza di almeno un componente con
+`PRESEN_B = 1` ed `ETAINT < 15` nel file individuale usato per
+preparare la sorgente. La regola VAUX si applica dopo il raccordo
+per `DB030`; quando il raccordo manca, la modalità resta assente.
+
+Un secondo esempio *reale* è `VAUX_PROP2`, che classifica la somma
+delle quote `QPROP1 + QPROP2`:
+
+```text
+VAUX_PROP2;1;QPROP1;;;;;;+
+VAUX_PROP2;1;QPROP2;;;;;;<100
+VAUX_PROP2;2;QPROP1;;;;;;+
+VAUX_PROP2;2;QPROP2;;;;;;=100
+```
+
+Queste righe usano solo l'aritmetica, senza operatori logici. Si possono
+controllare sulle elaborazioni del progetto, senza modificare i dati:
+
+```{r vaux-case-study, eval=FALSE}
+setwd("D:/linea MEB/GRAPH_QUESTIONNAIRE/SSPICE/PROJECT")
+d <- readRDS("output/prepared-data/prepared_questionnaire_data.rds")
+table(d$VAUX7, useNA = "ifany")
+table(d$VAUX_PROP2, useNA = "ifany")
+```

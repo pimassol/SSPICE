@@ -1,0 +1,35 @@
+Package: SSPICE
+Type: Package
+Title: Systematic Skip-Pattern Integrity and Consistency Engine
+Version: 0.1.0
+Authors@R: 
+    person(
+        given = "Pierpaolo",
+        family = "Massoli",
+        role = c("aut", "cre"),
+        email = "pimassol@istat.it"
+    )
+Description: Provides a graph-based framework for representing, analyzing,
+    and validating structured statistical data governed by explicit logical
+    dependencies, including questionnaire routing and other rule-based data
+    structures. It supports the construction and structural analysis of
+    directed acyclic graphs, preparation of record-level data, detection and
+    localization of logical and skip-pattern inconsistencies, and generation
+    of variable domains and formal compatibility rules. It also provides
+    tools for evaluating empirical closure and minimality properties of the
+    resulting Horn theory and for supporting the correction of inconsistent
+    statistical records.
+License: GPL (>= 3)
+Encoding: UTF-8
+Language: en-US
+Depends: R (>= 4.1.0)
+Imports: gmp, cli, doParallel, dplyr, foreach, jsonlite, parallel,
+        pdftools, readr, stringi, stringr, tibble
+Suggests: knitr, pkgload, rmarkdown, testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.3
+VignetteBuilder: knitr
+NeedsCompilation: no
+Packaged: 2026-09-26 16:24:33 UTC; Marco
+Author: Pierpaolo Massoli [aut, cre]
+Maintainer: Pierpaolo Massoli <pimassol@istat.it>

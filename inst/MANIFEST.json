@@ -1,0 +1,465 @@
+[
+  {
+    "function": "coarse_groups_OR",
+    "file": "coarse_groups_OR.R",
+    "parameters": [
+      "a"
+    ],
+    "original_code_sha256": "e2d8758a1ff9321108afe6ec7c305cbd2c16ba92dfa397fd210239f9c1c20fd2"
+  },
+  {
+    "function": "replace_with_row_index",
+    "file": "replace_with_row_index.R",
+    "parameters": [
+      "x",
+      "string_map"
+    ],
+    "original_code_sha256": "8d87c225cf17c6b333fc5873534df99bfc08538fd5476861d6e02cca592d4ed7"
+  },
+  {
+    "function": "coarse_groups_XOR",
+    "file": "coarse_groups_XOR.R",
+    "parameters": [
+      "routes"
+    ],
+    "original_code_sha256": "1a2f69c9efe914ba5a23985bfe48d308eaa7f74ad2d13d81d097c4ad09d6a8bd"
+  },
+  {
+    "function": "convert_routes_str2num",
+    "file": "convert_routes_str2num.R",
+    "parameters": [
+      "routes"
+    ],
+    "original_code_sha256": "09a81cdbcaecfb1eb7dd3fc6fdf5e2dc7f18e664a3b0d7884c0203431764b8b3"
+  },
+  {
+    "function": "finditem",
+    "file": "finditem.R",
+    "parameters": [
+      "vect",
+      "item",
+      "logop"
+    ],
+    "original_code_sha256": "09f5e600fb8e380aedc79ea3518d1e158b82fd48989e26663d3254acbd5fa30d"
+  },
+  {
+    "function": "dummize",
+    "file": "dummize.R",
+    "parameters": [
+      "num",
+      "nitems",
+      "minitem",
+      "maxitem"
+    ],
+    "original_code_sha256": "191af401f702fe02fadbe103916f680fe152ee2447b13af8ebf93fc3c1bd489f"
+  },
+  {
+    "function": "item_scaling",
+    "file": "item_scaling.R",
+    "parameters": [
+      "num",
+      "nitems",
+      "minitem",
+      "maxitem"
+    ],
+    "original_code_sha256": "c68ece5fe2ac9a430c1f5038e0522fa163930a36ea31e22e48fd1422fd32f49a"
+  },
+  {
+    "function": "create_incidence_matrix",
+    "file": "create_incidence_matrix.R",
+    "parameters": [
+      "routes",
+      "vnames"
+    ],
+    "original_code_sha256": "3c6f2129077fdc059787c6f6afc38bd91e734443f74089c1e45956042e6fc199"
+  },
+  {
+    "function": "create_adiacency_matrix",
+    "file": "create_adiacency_matrix.R",
+    "parameters": [
+      "B_transposed",
+      "vnames"
+    ],
+    "original_code_sha256": "b08c42c8394d1deea737755123e28b60b36f2a25d6680b5c1dccd62b64034aa5"
+  },
+  {
+    "function": "find_shortest_path",
+    "file": "find_shortest_path.R",
+    "parameters": [
+      "A",
+      "start_node",
+      "end_node",
+      "vnames"
+    ],
+    "original_code_sha256": "aa550b19be1334f375f611413aa077bf7cb9cef8aa80b2de69df1951acc83f8c"
+  },
+  {
+    "function": "is_DAG",
+    "file": "is_DAG.R",
+    "parameters": [
+      "A"
+    ],
+    "original_code_sha256": "78d88a32f2d1821a5b3fb1b83786f584edb7d00b45192519bee8035520fd87ac"
+  },
+  {
+    "function": "find_longest_path",
+    "file": "find_longest_path.R",
+    "parameters": [
+      "A",
+      "vnames"
+    ],
+    "original_code_sha256": "658f1a27b1292a270fdd9b1e96253ea8d8feac1afc72aaee656d7bb774d7c96b"
+  },
+  {
+    "function": "calculate_degrees",
+    "file": "calculate_degrees.R",
+    "parameters": [
+      "A"
+    ],
+    "original_code_sha256": "bdb230fa3cdf9ffe58eb5094457af4297ab5947aaadacfabb76617d7b3b326e0"
+  },
+  {
+    "function": "calculate_hits",
+    "file": "calculate_hits.R",
+    "parameters": [
+      "A",
+      "max_iter",
+      "tol"
+    ],
+    "original_code_sha256": "c2895e7a7c403a3aaad038c740006860eae55ff2571c6bd901179999f76820b4"
+  },
+  {
+    "function": "find_isolated_nodes",
+    "file": "find_isolated_nodes.R",
+    "parameters": [
+      "A"
+    ],
+    "original_code_sha256": "8c8a6b901b8e5f40e03cf65f1c10303d8ba981d68a8e4627cfb7dab38fcc1af0"
+  },
+  {
+    "function": "calculate_out_degree",
+    "file": "calculate_out_degree.R",
+    "parameters": [
+      "A"
+    ],
+    "original_code_sha256": "c4371b91cecf280d5fd886bd6197765c30cb65a25cf2c41ac76c02b5632c794e"
+  },
+  {
+    "function": "find_source_nodes",
+    "file": "find_source_nodes.R",
+    "parameters": [
+      "A"
+    ],
+    "original_code_sha256": "1d0da2e97be130d4301b2976437c3b3d23526a3e13557ba32baa208487cf593c"
+  },
+  {
+    "function": "graph_partitions",
+    "file": "graph_partitions.R",
+    "parameters": [
+      "A",
+      "max_paths_per_partition"
+    ],
+    "original_code_sha256": "f5777a37f0f68870b8f1fc799f7cc0a73989d9d943a92ad1659fdd3d0bd43662"
+  },
+  {
+    "function": "create_vaux_variables",
+    "file": "create_vaux_variables.R",
+    "parameters": [
+      "inpdata",
+      "vauxs_data",
+      "extDFpath",
+      "routing_vnames"
+    ],
+    "original_code_sha256": "e568dd33737398594f2e95e0c04a07f2f47a907cd3b97cc951dc9a1219819859"
+  },
+  {
+    "function": "generate_groups_OR",
+    "file": "generate_groups_OR.R",
+    "parameters": [
+      "data",
+      "routing_file_ungrouped",
+      "routing_file_grouped"
+    ],
+    "original_code_sha256": "1c47fdb3cd7fc3b74fc3d865a761a1d3d729ca76c52cabec7e760ffd30b0bfba"
+  },
+  {
+    "function": "generate_groups_XOR",
+    "file": "generate_groups_XOR.R",
+    "parameters": [
+      "data",
+      "routing_file_ungrouped",
+      "routing_file_grouped",
+      "strict"
+    ],
+    "original_code_sha256": "7db3db96f610222ed93f73072ded0ae5c2335abd2121da9de26ad6c49055e0cd"
+  },
+  {
+    "function": "clean_data",
+    "file": "clean_data.R",
+    "parameters": [
+      "data"
+    ],
+    "original_code_sha256": "37173741a8456f84c4198a1d192e028925d900d3f53f94d49dc5ec76335f2029"
+  },
+  {
+    "function": "if_is_a_group",
+    "file": "if_is_a_group.R",
+    "parameters": [
+      "var_index",
+      "vtype"
+    ],
+    "original_code_sha256": "30c8cd402b8a11a51dda5768a8b1508c9efc4414d1c9b0085a0831af91e7acef"
+  },
+  {
+    "function": "dummize_vector",
+    "file": "dummize_vector.R",
+    "parameters": [
+      "x_row",
+      "y"
+    ],
+    "original_code_sha256": "e9c01c136059abf54c2ca5b35703fc801460e0b8021bcefc3820c8312d13db78"
+  },
+  {
+    "function": "check_all_paths",
+    "file": "check_all_paths.R",
+    "parameters": [
+      "dset_data",
+      "routes",
+      "Bt",
+      "varkey",
+      "items.maps",
+      "path.items.maps"
+    ],
+    "original_code_sha256": "23f67937ab9194523df1f71bcc0b403e362c15dc4e4da17572ceeccc8273961f"
+  },
+  {
+    "function": "report_errors",
+    "file": "report_errors.R",
+    "parameters": [
+      "route_errs",
+      "vn_routes"
+    ],
+    "original_code_sha256": "f7c0c7c8912f52d20340bbac67367905f7339da9e2a9776561be19d0d945b2d2"
+  },
+  {
+    "function": "routing_check",
+    "file": "routing_check.R",
+    "parameters": [
+      "dset_data",
+      "routes",
+      "Bt",
+      "varkey",
+      "items.maps",
+      "path.items.maps"
+    ],
+    "original_code_sha256": "1ba3855bb72cf0d25c1f7653bc73fff5aa1691f7fac0517e44234f1b4f4dfa2c"
+  },
+  {
+    "function": "generate_stree",
+    "file": "generate_stree.R",
+    "parameters": [
+      "t_inc",
+      "routes"
+    ],
+    "original_code_sha256": "dad627953c34336f657fcdbd3b1cb51d7b409d62885828b42f1042fefbb00ac0"
+  },
+  {
+    "function": "calculate_flows",
+    "file": "calculate_flows.R",
+    "parameters": [
+      "stree",
+      "list_df",
+      "routes",
+      "t_inc"
+    ],
+    "original_code_sha256": "ef7ad2c1eb1d3cc08448718226d4d47faa70ff61e01fc0a96187f434c5546a9c"
+  },
+  {
+    "function": "create_vardom",
+    "file": "create_vardom.R",
+    "parameters": [
+      "routes_df",
+      "Bt",
+      "items.maps",
+      "path.items.maps",
+      "output.path"
+    ],
+    "original_code_sha256": "ef4ed3e162f70e4c35e2c562397534e97428295e355a8a1ad4b907539f57a24d"
+  },
+  {
+    "function": "create_rules",
+    "file": "create_rules.R",
+    "parameters": [
+      "Bt",
+      "routes_df",
+      "items.maps",
+      "path.items.maps",
+      "path_output",
+      "condizione_intervallo"
+    ],
+    "original_code_sha256": "3ae09c1b0dab647861864efb92a44368ce62029e39491aecc3d00269bb2fb591"
+  },
+  {
+    "function": ".parse_intervalli",
+    "file": ".parse_intervalli.R",
+    "parameters": [
+      "s"
+    ],
+    "original_code_sha256": "b742b111bf382ac7a87c39641ef2e1f7044d1fe7581dbc951b0210df5d9c3d63"
+  },
+  {
+    "function": "in_domain_var_item",
+    "file": "in_domain_var_item.R",
+    "parameters": [
+      "vardom",
+      "varname",
+      "item"
+    ],
+    "original_code_sha256": "b4b48364ed3b35be25d3eb46551c64e99bad642309403c0155ad42e2d9837cbd"
+  },
+  {
+    "function": "rules_dedup_sanitize",
+    "file": "rules_dedup_sanitize.R",
+    "parameters": [
+      "rules",
+      "vardom"
+    ],
+    "original_code_sha256": "509345c2bd68198b930019c7f22ffd5442439818c7989c70aaee1cb704c1451d"
+  },
+  {
+    "function": "domain_values_from_routes",
+    "file": "domain_values_from_routes.R",
+    "parameters": [
+      "routes_df",
+      "Bt",
+      "items.map.file",
+      "items.map.path"
+    ],
+    "original_code_sha256": "e0255d37042478f559baf6b342171ccdc02c2df69e5720ac5c3cd9191b0fdfe4"
+  },
+  {
+    "function": "G_make_meta",
+    "file": "G_make_meta.R",
+    "parameters": [
+      "routes",
+      "Bt",
+      "A",
+      "vardom",
+      "rules",
+      "res",
+      "pdf_dir"
+    ],
+    "original_code_sha256": "a8217dfb5e8a6eb3cae5dd3044946ea7a60a08a185864e12aa8fd553de9672b6"
+  },
+  {
+    "function": "V_build_patches",
+    "file": "V_build_patches.R",
+    "parameters": [
+      "routes",
+      "Bt",
+      "vardom",
+      "rules",
+      "res",
+      "items.map.file",
+      "items.map.path"
+    ],
+    "original_code_sha256": "924595027e49f5823afbba0abe30f719c18b4cccb9c9917cf0de0b0306d7bdf8"
+  },
+  {
+    "function": "E_apply_patches",
+    "file": "E_apply_patches.R",
+    "parameters": [
+      "vardom",
+      "rules",
+      "patches",
+      "output.path"
+    ],
+    "original_code_sha256": "47e360ec6daa648713ece0a4f41496f94d2adb31228e1c00bfef4a3cad785758"
+  },
+  {
+    "function": "nl_norm",
+    "file": "nl_norm.R",
+    "parameters": [
+      "x"
+    ],
+    "original_code_sha256": "fa228da78ed2f99cdeb28d2a9e0bda2d9914b1dd6e351ea3e28f512bf2b357af"
+  },
+  {
+    "function": "pdf_dir_to_text",
+    "file": "pdf_dir_to_text.R",
+    "parameters": [
+      "pdf_dir"
+    ],
+    "original_code_sha256": "d978beca3e4f0f97964a4f68e8c9a169fd9c30cce1504ad94d27ce7f614782e1"
+  },
+  {
+    "function": "guess_var",
+    "file": "guess_var.R",
+    "parameters": [
+      "vnames",
+      "kind"
+    ],
+    "original_code_sha256": "6516dcd28ec6778a0f748a7c6c681622b8b8f66cd5ab2c293abf546016ac246c"
+  },
+  {
+    "function": "parse_option_codes",
+    "file": "parse_option_codes.R",
+    "parameters": [
+      "text_block",
+      "target_keywords"
+    ],
+    "original_code_sha256": "668adf8b347cb450b6e644d866bd5838379f7d75b3f4f81b81471cb0a45dc701"
+  },
+  {
+    "function": "detect_age_gates",
+    "file": "detect_age_gates.R",
+    "parameters": [
+      "text"
+    ],
+    "original_code_sha256": "eea5acac9f824bad8cba1dafcb88e04bd35adbcc9972bfb8d6f3401b96fa33ea"
+  },
+  {
+    "function": "detect_gender_scopes",
+    "file": "detect_gender_scopes.R",
+    "parameters": [
+      "text"
+    ],
+    "original_code_sha256": "ed1ee5d9b5cb6e4c143aaed171fd141751fb49a71f8858c2e99d2650a6bd6b2f"
+  },
+  {
+    "function": "gen_semantic_from_pdfs",
+    "file": "gen_semantic_from_pdfs.R",
+    "parameters": [
+      "pdf_dir",
+      "routes",
+      "Bt",
+      "vardom",
+      "items.map.file",
+      "items.map.path",
+      "output.path"
+    ],
+    "original_code_sha256": "9d815f75fc9af1ff9e05d3ee19bbb50a17f1e26973a66c4c7305febc3a12f949"
+  },
+  {
+    "function": "derive_complete_rules",
+    "file": "derive_complete_rules.R",
+    "parameters": [
+      "routes_df",
+      "Bt",
+      "vardom",
+      "rules_current",
+      "items.map.file",
+      "items.map.path",
+      "path_output"
+    ],
+    "original_code_sha256": "c08e352c433c4faaef85b0a31a654a7e09995d9304b9a2f90fcbe6288da62841"
+  },
+  {
+    "function": "run_questionnaire_pipeline",
+    "file": "run_questionnaire_pipeline.R",
+    "parameters": [
+      "CFG"
+    ],
+    "original_code_sha256": "38efd3a389d5acd4129aed2cc972e4f66995356889b6464bf990cb67c5d25ad1"
+  }
+]
