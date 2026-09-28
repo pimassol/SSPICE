@@ -1,9 +1,9 @@
 ---
-title: "06 — Correzione dei record"
+title: "06 — Record correction"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{06 — Correzione dei record}
+  %\VignetteIndexEntry{06 — Record correction}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,23 +12,23 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
 
-# DAG esteso e partizione iniziale
+# Extended DAG and initial partition
 
-Lo Step 09 inserisce i nodi degli edit logici nel DAG e prepara i dati corrispondenti; lo Step 10 verifica i record e separa una sola volta gli `EXACT` dagli `ERRONEOUS`. I record esatti rimangono immutati e costituiscono il pool dei donatori. La correzione lavora sui record originariamente erronei; un limite pilota viene applicato dopo la partizione.
+Step 09 adds logical-edit nodes to the DAG and prepares the corresponding data. Step 10 checks the records and partitions them once into `EXACT` and `ERRONEOUS`. Exact records remain unchanged and form the donor pool. Correction processes the records initially classified as erroneous; a pilot limit is applied after partitioning.
 
 ```{r correction-steps}
 source(file.path("scripts", "09_build_extended_DAG.R"))
 source(file.path("scripts", "10_correct_data.R"))
 ```
 
-# Configurare un pilot
+# Configure a pilot run
 
-Nel progetto, `correction_strata = "FPROV"`, `correction_record_limit = 100L` e `correction_output_dir` impostano il pilot di esempio. `correction_control_args` include temperatura, penalità, donatori minimi, seme e le opzioni `use_parallel` e `parallel_workers`. Impostare queste opzioni in `scripts/00_config.R` prima dello Step 10. Il parallelismo suddivide il lavoro per record; verificare il numero di worker effettivi nel riepilogo dell'esecuzione.
+In the project configuration, `correction_strata = "FPROV"`, `correction_record_limit = 100L`, and `correction_output_dir` specify the example pilot. `correction_control_args` contains temperatures, penalties, the minimum number of donors, the random seed, and the `use_parallel` and `parallel_workers` options. Set these in `scripts/00_config.R` before Step 10. Parallel execution assigns records to workers; inspect the execution summary for the number of workers actually used.
 
-Le distribuzioni condizionate vengono precalcolate sui donatori esatti per strato e predecessore immediato; la gestione dei predecessori mancanti usa il pool appropriato di donatori esatti. Le variabili congelate comprendono quelle indicate dall'utente, le VAUX esogene e i gruppi OR; una VAUX esogena attiva conserva la modalità originaria, mentre una inattiva può diventare `NA`.
+Conditional distributions are precomputed from exact donors by stratum and immediate predecessor. When that predecessor is missing, the algorithm uses the appropriate exact-donor pool. Frozen variables include user-specified variables, exogenous VAUX variables, and OR groups. An active exogenous VAUX retains its original modality; an inactive one may be blanked to `NA`.
 
-# Output e diagnosi
+# Outputs and diagnostics
 
-Lo Step 10 salva `correction_result.rds`, `corrected_questionnaire_data.rds` e i riepiloghi CSV nella directory configurata. Distinguere i record corretti da quelli irrisolti e conservare il legame con la riga e l'identificativo originali. Una violazione di edit logico persistente richiede diagnosi e compare nell'analisi di qualità.
+Step 10 saves `correction_result.rds`, `corrected_questionnaire_data.rds`, and CSV summaries to the configured output directory. Distinguish corrected from unresolved records and retain their original row and identifier. Persistent logical-edit violations require investigation and appear in the quality analysis.

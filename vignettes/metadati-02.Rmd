@@ -1,9 +1,9 @@
 ---
-title: "02 — Metadati e sorgenti esterne"
+title: "02 — Metadata and external sources"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{02 — Metadati e sorgenti esterne}
+  %\VignetteIndexEntry{02 — Metadata and external sources}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,20 +12,20 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
 
-# I file di ingresso
+# Input files
 
-| File | Funzione | Controllo preliminare |
+| File | Purpose | Preliminary check |
 |:--|:--|:--|
-| `routing_file.csv` | Nodi, modalità e dipendenze di routing | Identificativi coerenti, nessun ciclo |
-| `vaux_rules.csv` | Definizioni delle variabili ausiliarie VAUX | Condizioni e modalità non contraddittorie |
-| `logical_edit_rules.csv` | Vincoli logici fra variabili | Modalità e operatori coerenti |
-| `items_mapping.csv` | Corrispondenza fra item di routing e colonne nei dati | Ogni item usato è mappato correttamente |
-| `data-raw/input/questionnaire_data.csv` | Risposte da verificare | Chiave record e codici mancanti concordati |
-| `data-raw/external/*.csv` | Informazioni aggiuntive per VAUX esogene | Chiave di raccordo e unicità alla granularità prevista |
+| `routing_file.csv` | Nodes, modalities, and routing dependencies | Consistent identifiers; no cycles |
+| `vaux_rules.csv` | Definitions of VAUX auxiliary variables | Noncontradictory conditions and modalities |
+| `logical_edit_rules.csv` | Logical constraints across variables | Consistent modalities and operators |
+| `items_mapping.csv` | Mapping between routing items and data columns | Every referenced item is mapped correctly |
+| `data-raw/input/questionnaire_data.csv` | Responses to check | Agreed record key and missing-value codes |
+| `data-raw/external/*.csv` | Additional information for exogenous VAUX variables | Join key and uniqueness at the intended level |
 
-I metadati di routing, VAUX ed edit logici presenti in questo progetto usano il separatore `;`; `items_mapping.csv` usa la virgola. La configurazione esplicita questi percorsi, il separatore dei metadati, `missing_codes` e `record_id` (`DB030` nell'esempio incluso). Non dedurre lo schema dei file dal nome: verificare le colonne e la chiave rispetto alle regole effettive.
+The routing, VAUX, and logical-edit metadata in this project use `;` as a separator; `items_mapping.csv` uses a comma. The configuration specifies these paths, the metadata separator, `missing_codes`, and `record_id` (`DB030` in the bundled example). Do not infer a file's schema from its name: check the columns and join key against the actual rules.
 
 ```{r metadata-check}
 source(file.path("scripts", "00_config.R"))
@@ -35,41 +35,36 @@ stopifnot(all(file.exists(c(config$routing_file, config$vaux_file,
 utils::head(utils::read.csv(config$items_mapping_file, check.names = FALSE))
 ```
 
-# VAUX esogene e unità di osservazione
+# Exogenous VAUX variables and observation units
 
-Una VAUX che richiede informazioni individuali non può essere inferita da un file che contiene solo il rispondente di ciascuna famiglia. Nel progetto, `extfile3.csv` contiene `DB030` ed `EXIST_MINOR`: quest'ultimo segnala se nella famiglia esiste almeno un individuo con `PRESEN_B = 1` ed `ETAINT < 15`. Le regole VAUX devono riferirsi all'informazione esterna corretta, collegata con `DB030`.
+A VAUX variable requiring individual-level information cannot be inferred from a file containing only one respondent per family. In this project, `extfile3.csv` contains `DB030` and `EXIST_MINOR`. The latter indicates whether the family includes at least one individual with `PRESEN_B = 1` and `ETAINT < 15`. VAUX rules must refer to the appropriate external information, joined on `DB030`.
 
-Le VAUX esogene attive mantengono il valore di origine durante la correzione; se diventano inattive per routing possono essere sbiancate a `NA`. Controllare valori assenti nelle fonti prima di interpretare un errore come risposta errata.
+Active exogenous VAUX variables retain their original values during correction. If routing makes them inactive, they may be blanked to `NA`. Check missing values in external sources before interpreting an error as an incorrect response.
 
+# Defining VAUX modalities
 
-# Costruire le modalità VAUX
+`vaux_rules.csv` has nine headerless columns separated by `;`. Each row contributes to a modality definition; multiple rows with the same variable name and modality form its condition.
 
-`vaux_rules.csv` contiene nove colonne senza intestazione, separate da
-`;`. Ogni riga contribuisce alla definizione di una modalità; più righe
-con lo stesso nome e la stessa modalità compongono la sua condizione.
-
-| Colonna | Significato |
+| Column | Meaning |
 |:--|:--|
-| V1 | Nome della VAUX |
-| V2 | Modalità da assegnare quando la condizione è vera |
-| V3 | Variabile usata dalla riga |
-| V4, V5 | Eventuale nome della sorgente esterna, senza `.csv`, e chiave di raccordo |
-| V6 | Valore esatto; `BLANK` o `NA` per valore assente |
-| V7, V8 | Limiti *inclusivi* di un intervallo |
-| V9 | Operatore dopo la riga, oppure confronto che termina un calcolo |
+| V1 | VAUX variable name |
+| V2 | Modality assigned when the condition holds |
+| V3 | Variable referenced by the row |
+| V4, V5 | Optional external source name, without `.csv`, and join key |
+| V6 | Exact value; `BLANK` or `NA` for a missing value |
+| V7, V8 | *Inclusive* interval bounds |
+| V9 | Operator following the row, or comparison terminating a calculation |
 
-Per le condizioni logiche il parser apre automaticamente una parentesi
-all'inizio di ogni condizione e la chiude quando incontra `NULL`.
+For logical conditions, the parser automatically opens a parenthesis at the start of each condition and closes it on `NULL`.
 
-| Token logico in V9 | Effetto |
+| Logical token in V9 | Effect |
 |:--|:--|
-| `AND`, `OR` | Collega la condizione della riga alla successiva |
-| `) AND (`, `) OR (` | Chiude il gruppo corrente e apre il successivo |
-| `NULL` | Chiude e valuta la condizione per la modalità della riga |
-| `IN(...)`, `NOT IN(...)` | Verifica appartenenza o non appartenenza; `BLANK` rappresenta il valore assente |
+| `AND`, `OR` | Connects this row's condition to the next |
+| `) AND (`, `) OR (` | Closes the current group and opens the next |
+| `NULL` | Closes and evaluates the condition for the row's modality |
+| `IN(...)`, `NOT IN(...)` | Tests set membership or nonmembership; `BLANK` denotes a missing value |
 
-Per esempio, la regola **solo logica**
-`A = 1 AND (D = 1 OR E = 3)` si rappresenta con:
+For example, the **logical-only** rule `A = 1 AND (D = 1 OR E = 3)` is represented by:
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -77,26 +72,20 @@ Per esempio, la regola **solo logica**
 | VAUX_ESEMPIO | 1 | D | 1 | . | . | `OR` |
 | VAUX_ESEMPIO | 1 | E | 3 | . | . | `NULL` |
 
-Nel file effettivo, V4 e V5 sono vuote per variabili già presenti nei
-dati. Se V4 indica `extfile1`, `extfile2` o `extfile3`, V5
-indica la chiave (`DB030` nell'esempio del progetto).
+In the actual file, V4 and V5 are empty for variables already in the data. When V4 specifies `extfile1`, `extfile2`, or `extfile3`, V5 specifies the join key (`DB030` in the project example).
 
-## Regole solo aritmetiche
+## Arithmetic-only rules
 
-| Operazione | Token semplice in V9 | Raggruppamento in V9 |
+| Operation | Simple token in V9 | Grouping token in V9 |
 |:--|:--|:--|
-| Somma | `+` | `) + (` |
-| Sottrazione | `-` | `) - (` |
-| Moltiplicazione | `*` | `) * (` |
-| Divisione | `/` | `) / (` |
+| Addition | `+` | `) + (` |
+| Subtraction | `-` | `) - (` |
+| Multiplication | `*` | `) * (` |
+| Division | `/` | `) / (` |
 
-L'ultima riga confronta il risultato con una costante numerica:
-`<n`, `<=n`, `>n`, `>=n`, `=n`, `==n` oppure
-`!=n`. Si possono anche indicare i confronti positivi o negativi
-(`<-2`, `>=0.5`). Il confronto chiude l'espressione e assegna
-la modalità V2 alle righe dei dati per cui è vero.
+The final row compares the result with a numeric constant using `<n`, `<=n`, `>n`, `>=n`, `=n`, `==n`, or `!=n`. Positive and negative constants are supported (for example, `<-2` or `>=0.5`). The comparison closes the expression and assigns modality V2 to rows where it holds.
 
-Esempio **solo aritmetico**, `(A+B)*(C-D) >= 10`:
+For example, the **arithmetic-only** expression `(A+B)*(C-D) >= 10` is represented by:
 
 | V1 | V2 | V3 | V9 |
 |:--|--:|:--|:--|
@@ -105,19 +94,13 @@ Esempio **solo aritmetico**, `(A+B)*(C-D) >= 10`:
 | VAUX_ARIT | 1 | C | `-` |
 | VAUX_ARIT | 1 | D | `>=10` |
 
-Le colonne V4–V5 e V6–V8 sono vuote in questo esempio. Gli operatori
-semplici seguono la precedenza aritmetica di R; i token con parentesi
-chiudono un gruppo e ne aprono un altro.
+Columns V4–V5 and V6–V8 are empty in this example. Simple operators follow R's arithmetic precedence; tokens containing parentheses close one group and open another.
 
-## Regole miste
+## Mixed rules
 
-Per proseguire dopo il confronto con una condizione logica, scrivere
-**il confronto seguito da uno spazio e dal connettore**:
-`<10 AND`, `<10 ) AND (`, `>=5 ) OR (`,
-`=100 NULL`. Anche `OR` e `) OR (` sono ammessi.
+To continue with a logical condition after an arithmetic comparison, write **the comparison, a space, and the connector**: `<10 AND`, `<10 ) AND (`, `>=5 ) OR (`, or `=100 NULL`. `OR` and `) OR (` are also accepted.
 
-Esempio: `A < 10 AND (D = 1 OR E = 3)`.
-Questo confronto è stretto e funziona anche se A contiene decimali.
+For example, `A < 10 AND (D = 1 OR E = 3)` uses a strict comparison that also works for noninteger values of A:
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -125,8 +108,7 @@ Questo confronto è stretto e funziona anche se A contiene decimali.
 | VAUX_MISTA | 1 | D | 1 | . | . | `OR` |
 | VAUX_MISTA | 1 | E | 3 | . | . | `NULL` |
 
-Esempio aritmetico raggruppato con logica:
-`((A + B) * (C - D) / F >= 5) OR (E = 1 AND A = 2)`.
+An example of grouped arithmetic followed by logic is `((A + B) * (C - D) / F >= 5) OR (E = 1 AND A = 2)`:
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -138,33 +120,20 @@ Esempio aritmetico raggruppato con logica:
 | VAUX_CALCOLO | 1 | E | 1 | . | . | `AND` |
 | VAUX_CALCOLO | 1 | A | 2 | . | . | `NULL` |
 
-I valori mancanti nei calcoli producono condizioni non vere e lasciano
-la VAUX a `NA` se nessuna modalità si applica. I raggruppamenti
-disponibili chiudono un gruppo e ne aprono un altro: non forniscono
-parentesi liberamente annidabili. `NOT IN(...)` è previsto per
-l'appartenenza a insiemi; `NOT` e `XOR` generali fra predicati
-non sono supportati in modo affidabile. Verificare modalità sovrapposte
-e righe senza condizione vera prima di usare nuove regole sui dati reali.
+Missing values in calculations make conditions false, leaving the VAUX variable as `NA` when no modality applies. The available grouping operators close one group and open another; they do not support arbitrarily nested parentheses. `NOT IN(...)` supports set nonmembership, but general `NOT` and `XOR` between predicates are not reliably supported. Check for overlapping modalities and rows without a true condition before applying new rules to real data.
 
-## Caso applicativo: VAUX del progetto
+## Project example: VAUX rules
 
-Nel progetto, `VAUX7` deriva dal file esterno `extfile3.csv`. La
-chiave `DB030` collega ciascuna famiglia al valore `EXIST_MINOR`,
-calcolato sull'intera famiglia. Le sue due modalità sono definite da:
+In this project, `VAUX7` is derived from the external file `extfile3.csv`. The key `DB030` joins each family to `EXIST_MINOR`, which is computed across all its members. Its two modalities are defined by:
 
 ```text
 VAUX7;1;EXIST_MINOR;extfile3;DB030;1;.;.;NULL
 VAUX7;2;EXIST_MINOR;extfile3;DB030;0;.;.;NULL
 ```
 
-Non si può ricostruire `EXIST_MINOR` dal solo rispondente del
-questionario: si ottiene dalla presenza di almeno un componente con
-`PRESEN_B = 1` ed `ETAINT < 15` nel file individuale usato per
-preparare la sorgente. La regola VAUX si applica dopo il raccordo
-per `DB030`; quando il raccordo manca, la modalità resta assente.
+`EXIST_MINOR` cannot be reconstructed from the questionnaire respondent alone. It is obtained from the presence of at least one member with `PRESEN_B = 1` and `ETAINT < 15` in the individual-level file used to prepare the external source. The VAUX rule applies after joining on `DB030`; if the join fails, the modality remains missing.
 
-Un secondo esempio *reale* è `VAUX_PROP2`, che classifica la somma
-delle quote `QPROP1 + QPROP2`:
+A second **actual** example is `VAUX_PROP2`, which classifies the sum of the shares `QPROP1 + QPROP2`:
 
 ```text
 VAUX_PROP2;1;QPROP1;;;;;;+
@@ -173,11 +142,10 @@ VAUX_PROP2;2;QPROP1;;;;;;+
 VAUX_PROP2;2;QPROP2;;;;;;=100
 ```
 
-Queste righe usano solo l'aritmetica, senza operatori logici. Si possono
-controllare sulle elaborazioni del progetto, senza modificare i dati:
+These rows use arithmetic only, without logical operators. Inspect the prepared project outputs without changing the data:
 
 ```{r vaux-case-study, eval=FALSE}
-setwd("D:/linea MEB/GRAPH_QUESTIONNAIRE/SSPICE/PROJECT")
+# Run this example from the SSPICE project root after Step 02.
 d <- readRDS("output/prepared-data/prepared_questionnaire_data.rds")
 table(d$VAUX7, useNA = "ifany")
 table(d$VAUX_PROP2, useNA = "ifany")

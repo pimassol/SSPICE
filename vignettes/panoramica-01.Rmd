@@ -1,9 +1,9 @@
 ---
-title: "01 — Panoramica e flusso SSPICE"
+title: "01 — Overview and SSPICE workflow"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{01 — Panoramica e flusso SSPICE}
+  %\VignetteIndexEntry{01 — Overview and SSPICE workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,29 +12,29 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
 
-# Perché SSPICE
+# Why SSPICE?
 
-SSPICE rappresenta le dipendenze logiche di un questionario mediante un grafo diretto aciclico (DAG). Usa il grafo per controllare i percorsi, localizzare incongruenze, costruire domini e regole formali, correggere record erronei e misurare il risultato. I valori mancanti hanno un ruolo: una domanda inattiva deve essere vuota, mentre una domanda attiva può richiedere un valore.
+SSPICE represents questionnaire dependencies as a directed acyclic graph (DAG). It uses the graph to check routing, locate inconsistencies, construct variable domains and formal rules, correct inconsistent records, and assess correction outcomes. Missing values are meaningful: an inactive question must be blank, whereas an active question may require a response.
 
-# Flusso operativo
+# Workflow
 
 ```text
-Metadati di routing ──> DAG canonico ────────────────┐
-                           │                          │
-Dati + fonti esterne ──> dati preparati ──> controllo │
-                           │                    │     │
-                           └──> edit logici ──> DAG esteso
-                                                │
-                                correzione <────┘
-                                    │
-                           rapporto qualità
+Routing metadata ──> canonical DAG ───────────────────┐
+                          │                            │
+Data + external sources ──> prepared data ──> checks   │
+                          │                  │         │
+                          └──> logical edits ──> extended DAG
+                                                  │
+                                    correction <──┘
+                                        │
+                                   quality report
 
-DAG canonico ──> VARDOM / RULES ──> validazione Horn
+Canonical DAG ──> VARDOM / RULES ──> Horn validation
 ```
 
-I passi operativi si trovano in `scripts/`: `00_config.R` imposta percorsi e opzioni; `01_build_DAG.R` costruisce il grafo; `02_prepare_data.R` prepara i record; `03_run_routing_check.R` controlla il routing; `04_create_VARDOM_and_RULES.R` produce i vincoli; `05_validate_horn_theory.R` e `06_validate_violation_localization.R` verificano le proprietà; `09_build_extended_DAG.R`, `10_correct_data.R` e `11_correction_quality_report.R` completano il percorso di correzione e valutazione. Gli script 07 e 08 servono rispettivamente a dati sintetici e conteggio dei pattern ammissibili.
+The operational steps are in `scripts/`: `00_config.R` specifies paths and options; `01_build_DAG.R` builds the graph; `02_prepare_data.R` prepares records; `03_run_routing_check.R` checks routing; `04_create_VARDOM_and_RULES.R` generates constraints; `05_validate_horn_theory.R` and `06_validate_violation_localization.R` assess their properties; and `09_build_extended_DAG.R`, `10_correct_data.R`, and `11_correction_quality_report.R` perform correction and evaluation. Scripts 07 and 08 generate synthetic data and count admissible patterns, respectively.
 
 ```{r workflow}
 source(file.path("scripts", "00_config.R"))
@@ -43,4 +43,4 @@ source(file.path("scripts", "02_prepare_data.R"))
 source(file.path("scripts", "03_run_routing_check.R"))
 ```
 
-Eseguire i passi in ordine e controllare gli output intermedi prima di avviare la correzione. La qualità dei metadati determina quella delle diagnosi.
+Run the steps in order and inspect intermediate outputs before starting correction. Diagnostic quality depends on the quality of the metadata.

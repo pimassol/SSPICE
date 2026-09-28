@@ -1,9 +1,9 @@
 ---
-title: "07 — Rapporti e qualità della correzione"
+title: "07 — Correction reports and quality assessment"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{07 — Rapporti e qualità della correzione}
+  %\VignetteIndexEntry{07 — Correction reports and quality assessment}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,27 +12,27 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
 
-# Perché misurare il risultato
+# Why assess correction outcomes?
 
-Un algoritmo terminato non implica che tutti i record siano corretti. Lo Step 11 confronta dati originali e corretti, ricalcola il controllo finale sul DAG esteso e produce un rapporto di qualità. Usa anche il controllo iniziale, i record esatti donatori, il tempo di esecuzione e la provenienza dei donatori quando disponibili.
+An algorithm finishing does not imply that every record has been corrected. Step 11 compares original and corrected data, reruns final checks against the extended DAG, and produces a quality report. When available, it also uses the initial check, exact donor records, elapsed time, and donor provenance.
 
 ```{r report-step}
 source(file.path("scripts", "11_correction_quality_report.R"))
 ```
 
-Lo script legge `correction_result.rds` e `corrected_questionnaire_data.rds` dallo Step 10, nonché `prepared_data_with_logical_edits.rds` e `questionnaire_extended_DAG.rds` dallo Step 09. Produce `correction_quality_report.rds`, un rapporto HTML e tabelle CSV nella directory `correction_quality_output_dir` oppure nella sottodirectory `quality-report` dei risultati di correzione.
+The script reads `correction_result.rds` and `corrected_questionnaire_data.rds` from Step 10, as well as `prepared_data_with_logical_edits.rds` and `questionnaire_extended_DAG.rds` from Step 09. It produces `correction_quality_report.rds`, an HTML report, and CSV tables in `correction_quality_output_dir` or the `quality-report` subdirectory of the correction output.
 
-# Come leggere il rapporto
+# Interpreting the report
 
-| Domanda | Evidenza da controllare |
+| Question | Evidence to inspect |
 |:--|:--|
-| Quanti record risultano risolti? | Riepilogo dei record, distinti da quelli irrisolti |
-| Restano violazioni? | Confronto dei rapporti iniziale e finale per record e variabile |
-| Quali valori sono cambiati? | Tabelle delle modifiche e confronto per modalità di cambiamento |
-| I donatori erano ammissibili? | Provenienza e diagnostica del pool `EXACT` |
-| Le variabili vincolate sono rispettate? | Audit delle variabili immutabili e delle VAUX esogene |
-| Quanto costa il processo? | Tempo trascorso e riepilogo dell'esecuzione |
+| How many records were resolved? | Record summary, with unresolved records shown separately |
+| Are there remaining violations? | Initial and final reports by record and variable |
+| Which values changed? | Change tables and counts by type of change |
+| Were the donors eligible? | Provenance and diagnostics for the `EXACT` donor pool |
+| Were constrained variables respected? | Audit of immutable variables and exogenous VAUX variables |
+| How much time did the process take? | Elapsed time and execution summary |
 
-Valutare separatamente il tasso di risoluzione e l'eventuale persistenza di errori. Un record può essere segnato come irrisolto; non considerarlo corretto sulla sola base di un valore modificato. Conservare l'output completo e i parametri del pilot per poter riprodurre il confronto.
+Assess the resolution rate separately from the persistence of errors. A record may remain unresolved; do not treat it as corrected solely because a value changed. Retain the full output and pilot settings to make the comparison reproducible.

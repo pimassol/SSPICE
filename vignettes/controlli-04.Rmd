@@ -1,9 +1,9 @@
 ---
-title: "04 — Preparazione dati, routing e localizzazione"
+title: "04 — Data preparation, routing checks, and violation localization"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{04 — Preparazione dati, routing e localizzazione}
+  %\VignetteIndexEntry{04 — Data preparation, routing checks, and violation localization}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,25 +12,25 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Gli esempi operativi presuppongono la directory principale del progetto SSPICE come directory di lavoro. Sono mostrati senza esecuzione durante la costruzione della vignetta perché richiedono i dati del progetto.
+> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
 
-# Preparare e controllare
+# Prepare and check the data
 
-Lo Step 02 prepara i dati del questionario e le VAUX; lo Step 03 applica il controllo di routing al DAG canonico. L'assenza di una risposta può essere corretta per una domanda inattiva ed errata per una domanda attiva: la diagnosi dipende dalla posizione nel grafo e dalle modalità osservate.
+Step 02 prepares questionnaire data and VAUX variables; Step 03 checks routing against the canonical DAG. A missing response may be correct for an inactive question but erroneous for an active one. The diagnosis depends on the question's position in the graph and the observed modalities.
 
 ```{r routing-steps}
 source(file.path("scripts", "02_prepare_data.R"))
 source(file.path("scripts", "03_run_routing_check.R"))
 ```
 
-Lo script `03_run_routing_check.R` salva `routing_check_results.rds`, `full_report.csv`, `summary_by_record.csv`, `summary_by_variable.csv` ed `execution_time.csv` in `output/routing-check/`. Leggere il rapporto dettagliato per le variabili coinvolte e i riepiloghi per individuare errori sistematici di metadati.
+`03_run_routing_check.R` saves `routing_check_results.rds`, `full_report.csv`, `summary_by_record.csv`, `summary_by_variable.csv`, and `execution_time.csv` under `output/routing-check/`. Inspect the detailed report for affected variables and the summaries for systematic metadata errors.
 
-# Validare la localizzazione
+# Validate violation localization
 
-`06_validate_violation_localization.R` confronta la localizzazione delle violazioni con un rapporto di riferimento quando questo è disponibile nella configurazione. Il confronto con una verità nota è distinto dal semplice conteggio degli errori riscontrati.
+When a reference report is available in the configuration, `06_validate_violation_localization.R` compares localized violations against it. Comparison with known answers provides different evidence from a simple count of detected errors.
 
 ```{r localization}
 source(file.path("scripts", "06_validate_violation_localization.R"))
 ```
 
-Prima di attribuire una violazione al record, esaminare la mappatura degli item e le fonti esterne delle VAUX: una regola incoerente può produrre molti errori apparenti.
+Before attributing a violation to a record, inspect the item mapping and external VAUX sources: an inconsistent rule can create many apparent errors.

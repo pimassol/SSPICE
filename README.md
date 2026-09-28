@@ -1,51 +1,51 @@
 # SSPICE
 
-**Systematic Skip-Pattern Integrity and Consistency Engine** è un pacchetto R per rappresentare e analizzare le dipendenze logiche di dati statistici strutturati. Costruisce un grafo aciclico diretto (DAG) a partire dai metadati, prepara i dati, individua e localizza incoerenze di routing e di edit logici e supporta la correzione dei record. Include strumenti per costruire domini e regole di compatibilità e per verificare proprietà della teoria di Horn risultante.
+**Systematic Skip-Pattern Integrity and Consistency Engine** is an R package for representing and analysing logical dependencies in structured statistical data. It builds a directed acyclic graph (DAG) from metadata, prepares record-level data, detects and localises routing and logical-edit inconsistencies, and supports record correction. It also provides tools for constructing variable domains and compatibility rules and for assessing properties of the resulting Horn theory.
 
-Questa è la versione **0.1.0**. Il repository contiene il codice del pacchetto, la documentazione delle funzioni, test, vignette, script di lavoro e dati di esempio con nomi dei file esterni anonimizzati.
+This repository contains SSPICE **0.1.0**, including package source code, function documentation, tests, operational scripts, vignettes, and example inputs.
 
-## Requisiti e installazione
+## Requirements and installation
 
-- R **4.1.0** o successivo.
-- Git per clonare il repository.
-- Accesso al repository finché è privato.
+- R **4.1.0** or later.
+- Git to clone the repository.
+- Repository access while it remains private.
 
-Da un terminale:
+Clone the repository:
 
-```text
+```sh
 git clone https://github.com/pimassol/SSPICE.git
 ```
 
-In R, dalla cartella appena clonata:
+From R, in the cloned repository:
 
 ```r
-setwd("percorso/alla/cartella/SSPICE")
+setwd("path/to/SSPICE")
 install.packages("remotes")
 remotes::install_local(".", dependencies = TRUE, build_vignettes = FALSE)
 library(SSPICE)
 ```
 
-Le dipendenze del pacchetto sono dichiarate in `DESCRIPTION`. Per eseguire i test e costruire le vignette occorrono anche le dipendenze suggerite; la costruzione delle vignette richiede Pandoc.
+Package dependencies are declared in `DESCRIPTION`. Building the vignettes also requires the suggested vignette packages and Pandoc.
 
-## Struttura del repository
+## Repository layout
 
-| Percorso | Contenuto |
+| Path | Contents |
 | --- | --- |
-| `R/` | Funzioni del pacchetto |
-| `man/` | Documentazione delle funzioni |
-| `vignettes/` | Guide al metodo, ai metadati, al DAG, ai controlli, alla correzione e alla qualità |
-| `scripts/` | Sequenza operativa numerata da `00_config.R` a `11_correction_quality_report.R` |
-| `tests/` | Test automatici |
-| `inst/extdata/SSPICE/` | Dati e metadati di esempio inclusi nel pacchetto |
+| `R/` | Package functions |
+| `man/` | Function reference files |
+| `vignettes/` | Guides to the workflow, metadata, DAG, validation, correction, and correction quality |
+| `scripts/` | Numbered operational scripts, from `00_config.R` through `11_correction_quality_report.R` |
+| `tests/` | Automated tests |
+| `inst/extdata/SSPICE/` | Bundled example data and metadata |
 
-I metadati di esempio comprendono `routing_file.csv`, `vaux_rules.csv`, `logical_edit_rules.csv` e `items_mapping.csv`. I file esterni sono denominati `extfile1.csv`, `extfile2.csv` ed `extfile3.csv`.
+The example metadata include `routing_file.csv`, `vaux_rules.csv`, `logical_edit_rules.csv`, and `items_mapping.csv`. External input files are named `extfile1.csv`, `extfile2.csv`, and `extfile3.csv`.
 
-## Preparare i dati per gli script
+## Prepare inputs for the operational scripts
 
-Gli script usano i percorsi relativi definiti in `scripts/00_config.R` e si eseguono dalla **radice del repository**. I file distribuiti con il pacchetto si trovano invece in `inst/extdata/SSPICE/`. Per predisporre una copia di lavoro in `data-raw/`, eseguire una volta in R:
+Run the numbered scripts from the **repository root**. They resolve input and output paths through `scripts/00_config.R`. The bundled example files are stored under `inst/extdata/SSPICE/`, while the scripts expect a working copy under `data-raw/`. Create that working copy once from R:
 
 ```r
-setwd("percorso/alla/cartella/SSPICE")
+setwd("path/to/SSPICE")
 
 example_dir <- file.path("inst", "extdata", "SSPICE")
 stopifnot(dir.exists(example_dir))
@@ -61,21 +61,21 @@ for (folder in c("metadata", "input", "external")) {
 }
 ```
 
-Questo passaggio copia i file di esempio; non modifica quelli in `inst/extdata/SSPICE/`. I file prodotti durante le elaborazioni vengono scritti nei percorsi `output/` indicati nella configurazione. Alcuni script di validazione o correzione richiedono risultati prodotti dagli script precedenti oppure file di input aggiuntivi: controllare `scripts/00_config.R` prima di avviarli.
+This creates working copies without changing the files in `inst/extdata/SSPICE/`. Outputs are written to locations specified in the configuration, generally under `output/`. Some validation and correction scripts require outputs from earlier steps or additional inputs; inspect `scripts/00_config.R` before running the full workflow.
 
-Per conoscere la procedura e il significato dei metadati, iniziare da `vignettes/panoramica-01.Rmd` e `vignettes/metadati-02.Rmd`. Le altre vignette seguono la numerazione nel nome.
+Start with `vignettes/panoramica-01.Rmd` for the overview and `vignettes/metadati-02.Rmd` for the metadata. The remaining guides follow the numbers in their filenames.
 
-## Verifica
+## Run the tests
 
-Dalla radice del repository, in R:
+From R, at the repository root:
 
 ```r
 install.packages("testthat")
 testthat::test_local(".", reporter = "summary")
 ```
 
-La presenza dei file nel repository non sostituisce una verifica su una nuova copia clonata: è opportuno eseguire installazione e test nell'ambiente in cui si intende usare SSPICE.
+The package has been cloned, tested, and installed successfully from a fresh checkout on Windows with R 4.4.3. This check does not establish compatibility with every operating system or R version.
 
-## Licenza
+## License
 
-GPL (>= 3), come indicato in `DESCRIPTION`.
+GPL (>= 3), as declared in `DESCRIPTION`.
