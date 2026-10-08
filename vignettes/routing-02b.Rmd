@@ -352,3 +352,77 @@ The operational rules are derived from `build_DAG()`,
 `coarse_groups_OR()`, `coarse_groups_XOR()`, `generate_groups_OR()`,
 `generate_groups_XOR()`, `clean_data()` and `check_all_paths()` in the inspected
 PROJECT copy. This revision changes the documentation, not those functions.
+
+<!-- SSPICE-QUESTIONNAIRE-EXAMPLE-BEGIN -->
+## From questionnaire instructions to routing metadata
+
+The following adapted fragments illustrate conditional jumps,
+unconditional jumps and multiple-response groups. Question wording,
+identifiers and numbering have been simplified for this tutorial.
+These examples are independent of the bundled questionnaire.
+
+### Conditional and unconditional jumps
+
+**Q1. During the reference period, did your household receive a
+housing allowance?**
+
+- Yes (1): continue to Q2.
+- No (2): go to Q3.
+
+**Q2. What was the total amount received?**
+
+Amount: __________
+
+**After Q2, go directly to Q3, regardless of the amount reported.**
+
+**Q3. Continue with the next questionnaire section.**
+
+The jump from Q1 to Q3 is conditional on response code 2.
+When this response is selected, Q2 is skipped and must be blank.
+When Q1 is answered Yes, Q2 is reached and an amount is required.
+
+The jump from Q2 to Q3 is unconditional: its destination does not
+depend on the amount reported. This routing instruction does not
+make Q2 optional or remove its domain restrictions.
+
+In SSPICE routing metadata, the conditional jump is encoded using
+the triggering item and its target. The unconditional jump uses
+`nroutes = 98`, an empty first routing-item field, and the target
+variable in the corresponding destination field.
+
+In this short fragment, Q3 immediately follows Q2. The unconditional
+instruction is therefore equivalent to ordinary progression, but
+makes the value-independent destination explicit. The same mechanism
+can target a later variable and skip intervening questions.
+
+### A multiple-response question represented by an OR group
+
+**Q4. Which sources did you use to estimate the amount?**
+
+Select at least one option. More than one option may be selected.
+
+- Personal experience.
+- Information from other households.
+- Published advertisements.
+
+Represent the three options by consecutive variables `SRC1`,
+`SRC2` and `SRC3`. In this example, a selected option is coded 1
+and an unselected option is blank. Assign the same positive
+logical-group identifier to the three routing rows.
+
+When this question is reached, at least one member must be filled.
+Several filled members are allowed: this is an OR group.
+If routing skips the whole question, all three members must be blank.
+
+The requirement to select at least one option is explicit in this
+adapted example. The instruction 'multiple answers allowed' alone
+would not establish that requirement.
+
+### OR groups and single-choice questions
+
+Q1 is a single categorical variable with two response codes.
+Its mutually exclusive answers do not, by themselves, require an
+SSPICE XOR group. XOR groups concern the supported representation
+across separate variables described earlier in this guide.
+
+<!-- SSPICE-QUESTIONNAIRE-EXAMPLE-END -->

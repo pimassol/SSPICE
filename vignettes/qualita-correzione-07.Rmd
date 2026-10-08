@@ -93,3 +93,13 @@ variables. Changing the stratification variable with `freeze_strata = TRUE`
 also changes the automatically frozen variable. Similar change counts do not
 imply identical imputed values. Compare correction time separately from total
 elapsed time and cache reuse.
+
+<!-- SSPICE-STRATUM-CODES-BEGIN -->
+## Territorial stratum codes
+
+In the supplied example, STRATUM identifies five geographical
+divisions of Italy: North-West (1), North-East (2), Centre (3),
+South (4), and Islands (5). It is used for stratification during
+correction. With freeze_strata = TRUE, stratum membership remains
+unchanged.
+<!-- SSPICE-STRATUM-CODES-END -->

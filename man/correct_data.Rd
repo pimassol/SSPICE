@@ -76,3 +76,13 @@ each variable given its immediate predecessor and strata, including when
 the predecessor is missing, with predecessor-only and marginal fallbacks.
 Complete donor records are never copied or updated with corrected records.
 }
+
+% SSPICE-STRATUM-CODES-BEGIN
+\section{Territorial strata in the example}{
+In the supplied example, STRATUM identifies five geographical
+divisions of Italy: North-West (1), North-East (2), Centre (3),
+South (4), and Islands (5). It is used for stratification during
+correction. With freeze_strata = TRUE, stratum membership remains
+unchanged.
+}
+% SSPICE-STRATUM-CODES-END
