@@ -1,9 +1,9 @@
 ---
-title: "05 — Domains, rules, and Horn theory"
+title: "05 — Domains, rules and Horn theory"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{05 — Domains, rules, and Horn theory}
+  %\VignetteIndexEntry{05 — Domains, rules and Horn theory}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,11 +12,15 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
 # Formal representation
 
-Step 04 derives variable domains and compatibility rules from the canonical DAG. The main outputs are `output/rules/VARDOM.dat`, `RULES.dat`, and `record_layout.csv`; `vardom.csv` and `rules_objects.rds` support inspection. SSPICE uses VOR and VXOR for logical groups and does not generate `STRUTT.dat` or `LISTE.dat`.
+Step 04 derives variable domains and compatibility rules from the canonical
+DAG. Its main outputs are `output/rules/VARDOM.dat`, `RULES.dat` and
+`record_layout.csv`; `vardom.csv` and `rules_objects.rds` support inspection.
+SSPICE uses VOR and VXOR for logical groups and does not generate `STRUTT.dat`
+or `LISTE.dat`.
 
 ```{r rules}
 source(file.path("scripts", "04_create_VARDOM_and_RULES.R"))
@@ -24,12 +28,27 @@ stopifnot(all(file.exists(file.path(config$rules_output_dir,
                                     c("VARDOM.dat", "RULES.dat", "record_layout.csv")))))
 ```
 
-# Validate the theory
+# Validating the theory
 
-Step 05 uses the DAG, `RULES.dat`, and the item mapping to assess empirical properties of the induced Horn theory. Closure and minimality checks help determine whether formal implications reflect the intended dependencies. Sampling is governed by `n_random_closure_tests`, `max_seed_size`, and the seed in the configuration; interpret the results together with those settings.
+Step 05 uses the DAG, `RULES.dat` and item mapping to validate empirical
+properties of the induced Horn theory. Closure and minimality checks help
+assess whether the formal implications reflect the intended dependencies.
+Sampled tests are governed by `n_random_closure_tests`, `max_seed_size` and
+the configured seed: interpret their results together with these settings.
 
 ```{r horn}
 source(file.path("scripts", "05_validate_horn_theory.R"))
 ```
 
-After changing the routing metadata, regenerate the DAG, domains, and rules before interpreting another validation result.
+If routing metadata change, regenerate the DAG, domains and rules before
+interpreting a new validation.
+
+# Domains and representation limits
+
+The routing format distinguishes equidistant categories, quantitative
+intervals, string presence and numeric codes without value-specific branching.
+These conventions are described in
+[Building the routing file](routing-02b.html). Check that the exported domains
+and item mapping match the intended specification. The absence of path errors
+does not establish the validity of every observed value. Passing sampled
+closure tests is not, by itself, an exhaustive proof over every possible subset.

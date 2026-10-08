@@ -1,0 +1,354 @@
+---
+title: "02b — Building the routing file"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{02b — Building the routing file}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+# Scope and reference
+
+Routing metadata describe variable order, domains represented in the graph,
+logical groups and jumps. A missing response may reflect an inactive question
+or an omission: the path distinguishes these cases.
+
+The conceptual structure follows Pierpaolo Massoli, *Graph Theory for
+Modelling a Survey Questionnaire*, Section 3, Tables 1 and 3, in
+`Q2008-3-14(4).pdf`. This guide documents the inspected SSPICE implementation:
+historical conventions are not presented as current features when the code
+interprets them differently. The examples were constructed for this guide;
+they do not reproduce a real questionnaire. Auxiliary-variable definitions
+and logical edits are outside this vignette's scope. OR and XOR groups are
+part of routing and are covered here.
+
+# Physical format and row order
+
+The project uses a semicolon-separated CSV file without a header. Each row
+represents an original variable; V1, V2, etc. are column names assigned by the
+reader and must not be added as the first row. `build_DAG()` also accepts a
+data frame with these columns.
+
+Use the same number of fields on every row and pad unused jump pairs with
+empty fields or `.`. Supply the separator through `separator` and missing-value
+tokens through `na_strings`. In the project configuration, `""`, `"."`,
+`"NA"` and `"NULL"` denote missing values. Do not use these tokens as names
+or labels that must be retained.
+
+Variable names must be unique, non-empty, case-consistent and match the data.
+Prefer syntactically valid R names; avoid entirely numeric names and collisions
+with canonical names such as `VOR1` and `VXOR1`. Some functions construct
+expressions from these names.
+
+Row order is part of the specification. Without a jump, processing continues
+to the next row, accounting for group contraction. Place each group's members
+in a contiguous block. Do not sort the file alphabetically after construction.
+
+In the sequential model used here, jump targets follow the originating
+variable. The last variable generates no outgoing incidence rows: do not use
+it to define another jump. `stop_on_cycle = TRUE` checks for cycles, but does
+not by itself establish the validity of all metadata.
+
+# Field dictionary
+
+| Field | Descriptive name | Meaning |
+|:--|:--|:--|
+| V1 | `varname` | Original variable name |
+| V2 | `nitems` | Represented categories; special conventions are explained below |
+| V3 | `vmin` | Lower bound of the represented domain |
+| V4 | `vmax` | Upper bound of the represented domain |
+| V5 | `lgroup` | `0`: single variable; positive: OR group; negative: XOR group |
+| V6 | `nroutes` | `0`: ordinary continuation; positive other than `98`: number of jump pairs; `98`: unconditional jump |
+| V7 | `item1` | Category triggering the first jump; missing for an unconditional jump |
+| V8 | `target1` | Target variable name for the first jump |
+| V9, V10 | `item2`, `target2` | Second pair, when specified |
+| V(2j+5), V(2j+6) | `itemj`, `targetj` | Jump pair j |
+
+Construction requires at least six columns and two rows. Files containing
+jumps must include every column needed for the declared pairs. Set V5 and V6
+to `0`, not to a missing value, when no group or jump applies.
+
+# Variable types
+
+| Case | V2 | V3 | V4 | Structural interpretation |
+|:--|--:|:--|:--|:--|
+| Qualitative, multiple categories | n > 1 | first code | last code | One structural category for each equidistant code |
+| Qualitative, single category | 1 | c | c | One declared value |
+| Quantitative | 1 | minimum | maximum > minimum | One presence state in routing; a declared numeric interval |
+| Free text | 0 | `.` | 1 | Text presence/absence |
+| Territorial code or numeric category without code-specific branching | -1 | minimum | maximum | One graph state, without enumerating every code |
+
+## Qualitative variables and nonconsecutive codes
+
+For n > 1, routing categories are equidistant:
+
+$$d = (v_{max}-v_{min})/(n-1).$$
+
+For example, `SCELTA;3;1;3;0;0;.;.` declares 1, 2 and 3, while
+`FASE;3;10;30;0;0;.;.` declares 10, 20 and 30. It does not represent
+10, 21 and 30. A single-category variable can be specified as
+`FLAG;1;1;1;0;0;.;.`. In routing, an observed zero does not generally mean
+missing; OR members, however, follow a specific convention.
+
+`items_mapping.csv` stores a correspondence between codes of the same
+variable, not between items and column names:
+
+```text
+varname,item_route,item_dataset
+FASE,10,10
+FASE,20,20
+FASE,30,21
+```
+
+This example declares the pairing of structural category 30 with observed
+value 21. The project contains a more extensive mapping for FASE.
+`build_DAG()` does not receive this file: it constructs the graph from routing
+metadata. Subsequent functions accepting item mapping use it separately.
+
+**Limitation of the inspected version:** recoding steps are not uniform across
+all functions. `check_all_paths()` contains data substitution from the second
+to the third column, sequential substitutions, and a reference to
+`mapping$old`, which is absent from the header shown above. Therefore, do not
+assume that changing a mapping table automatically makes every representation
+equivalent. For new irregular codes, verify the entire correspondence on known
+records, including jumps, rather than changing a validated project's mapping
+blindly. Documentation does not fix these code instructions.
+
+## Quantitative variables
+
+`IMPORTO;1;0;100000;0;0;.;.` declares an interval but does not create
+100001 branches. The variable has a single structural presence state. A jump
+associated with that state is not a threshold comparison: writing a numeric
+item in V7 does not by itself implement `IMPORTO > threshold`.
+
+Numeric routing conversion uses `as.integer()`: do not specify decimal bounds
+expecting them to be preserved. This limitation concerns metadata; it does not
+mean that every observed quantitative value must be an integer. Checking
+presence along a path does not replace complete numeric-domain validation:
+`dummize()` activates the single state for any non-missing value when nitems = 1.
+
+## Strings, leading zeros and identifiers
+
+`PROFESSIONE;0;.;1;0;0;.;.` represents an open text field. During preparation,
+`clean_data()` converts each character/factor column to 1 if non-empty text
+remains after ASCII conversion and trimming, and to `NA` otherwise. The
+original text is not retained in the prepared column. This is not a mechanism
+for imputing or comparing the content of phrases.
+
+Conversion depends on the column's actual R class, not just V2. A code such as
+`"001"` read as numeric becomes 1 and loses its leading zeros; read as
+character, it becomes a presence indicator in `clean_data()`. Retain the
+original representation separately when formatting is informative.
+Alphanumeric identifiers require a one-to-one numeric encoding consistent
+across all linked files; do not supply them as text expecting the key to
+survive cleaning.
+
+`PROVINCIA;-1;1;107;0;0;.;.` retains numeric coding in the data but avoids
+107 graph branches. It does not validate membership in an official code list.
+If the path depends on a specific code, use an appropriate structural-category
+representation: `-1` does not create separate branches for individual codes.
+
+An identifier may be represented, as DB030 is in the project, by V2 = 1 and
+an interval. Its key role comes from `record_id`, not from a statistical
+property inferred from routing. Similarly, `-1` does not automatically freeze
+a variable during correction. Identifier role, stratification and immutability
+are separate settings.
+
+# Continuation, conditional jumps and unconditional jumps
+
+## No jump: V6 = 0
+
+Every category continues to the next node. Jump-pair fields remain missing.
+A target written after V6 is not used when V6 is zero.
+
+## Conditional jump
+
+```text
+SCELTA;2;1;2;0;1;1;FINE
+DETTAGLIO;1;0;100;0;0;.;.
+FINE;1;1;1;0;0;.;.
+```
+
+If SCELTA is 1, the path jumps directly to FINE; if it is 2, the path
+continues to DETTAGLIO and then FINE. DETTAGLIO must be missing when its
+branch is skipped. Declare only one target per category and do not repeat
+the same category in different pairs. For two jumps, V6 is 2 and V9/V10 are
+also required. Do not use 98 as an ordinary count: it is reserved.
+
+## UNCONDITIONAL (absolute) jump: V6 = 98
+
+```text
+SCELTA;3;1;3;0;98;.;FINE
+DETTAGLIO;1;0;100;0;0;.;.
+FINE;1;1;1;0;0;.;.
+```
+
+**The jump is independent of the originating variable's item value.** When
+SCELTA is active, all its categories lead to FINE. Set V7 to missing (`.` in
+the CSV) and put FINE in V8; one pair is sufficient.
+
+In the current code, 98 restricts reading to the first pair, while a missing
+V7 selects all categories. Do not enter a specific item in V7: for a variable
+with multiple categories this can restrict the jump to that item despite
+V6 being 98. A missing V7 can also extend a conditional jump to all categories,
+so fill these fields carefully.
+
+Unconditional does not mean that the target must be filled when the originating
+variable is inactive. Independence concerns the item value, not activation of
+the path. The isolated DETTAGLIO node in this small example is intentional;
+in a complete questionnaire it may receive other incoming edges.
+
+## Historical V6 = -1 convention
+
+The paper assigns -1 the meaning of no edge to the next row.
+`create_incidence_matrix()` instead creates the ordinary edge first and only
+processes jumps when V6 > 0. **Do not use -1 to suppress the edge in the current
+version:** this historical semantics is not implemented.
+
+# Logical groups
+
+## OR: at least one selected member
+
+Members share a positive identifier in V5 and occupy contiguous rows.
+A group must contain at least two members. Example:
+
+```text
+INIZIO;1;1;1;0;0;.;.
+MEZZO_A;1;1;1;1;0;.;.
+MEZZO_B;1;1;1;1;0;.;.
+FINE;1;1;1;0;0;.;.
+```
+
+When the group is required, at least one member must be selected; multiple
+selections are allowed. The canonical DAG uses a single `VOR1` node.
+Preparation replaces the members with this node.
+
+**Current data convention:** `generate_groups_OR()` evaluates `member > 0`.
+Use a positive value for selected and `NA` for unselected. Zero or negative
+values do not activate the group. Do not describe this implementation as a
+generic non-missingness test suitable for any domain.
+
+OR coarsening resets jumps on the resulting node and does not preserve
+member-specific jumps. In this representation, members should be declared
+without individual jumps. For an incoming jump, use the canonical name `VOR1`
+as its target: original member names are removed and OR coarsening does not
+automatically rewrite all references to them. Inspect the grouped routing
+table after construction.
+
+## XOR: exactly one of two alternatives
+
+The current version handles a group of two members sharing a negative V5
+label:
+
+- one quantitative member: V2 = 1 and V3 < V4;
+- one single-category qualitative member: V2 = 1 and V3 = V4.
+
+This is not an arbitrary XOR among three or more variables or two quantitative
+variables. The following example represents the choice between reporting an
+expense and reporting no expense; the no-expense branch skips the detail
+question:
+
+```text
+INIZIO;1;1;1;0;0;.;.
+NESSUNA_SPESA;1;1;1;-1;98;.;FINE
+IMPORTO;1;0;100000;-1;0;.;.
+DETTAGLIO;2;1;2;0;0;.;.
+FINE;1;1;1;0;0;.;.
+```
+
+`VXOR1` is 1 when only the categorical member is present and 2 when only the
+quantitative member is present. Both missing produce `NA`: this is compatible
+with an inactive group, but not a required group. Both present constitute a
+violation and, with `strict = TRUE`, cause `generate_groups_XOR()` to stop.
+These members are checked for non-missingness: IMPORTO = 0 is also present.
+
+The natural successor is the first row after the entire group. Each branch
+may have its own target. The quantitative member accepts ordinary continuation
+or an unconditional jump, not value-conditional jumps; the categorical member
+must have a single effective target. Coarsening then constructs jumps on
+categories 1 and 2 of the canonical node.
+
+# Standalone construction examples
+
+These examples require only an installed SSPICE package. They do not load
+PROJECT data and are executed when the vignette is built. Example variable
+names are kept unchanged to match the CSV fragments: SCELTA means choice,
+DETTAGLIO means detail, INIZIO/FINE mean start/end, IMPORTO means amount,
+NESSUNA_SPESA means no expense, and MEZZO_A/MEZZO_B identify two options.
+
+```{r routing-examples}
+make_routes <- function(lines) {
+  read.table(text = paste(lines, collapse = "\n"),
+             sep = ";", header = FALSE,
+             na.strings = ".", stringsAsFactors = FALSE)
+}
+r <- make_routes(c(
+  "SCELTA;2;1;2;0;1;1;FINE",
+  "DETTAGLIO;1;0;100;0;0;.;.",
+  "FINE;1;1;1;0;0;.;."
+))
+dag <- SSPICE::build_DAG(r, analyze = FALSE)
+stopifnot(isTRUE(dag$graph_diagnostics$is_DAG))
+dag$Bt
+
+absolute <- r
+absolute$V6[1] <- 98L
+absolute$V7[1] <- NA
+absolute$V8[1] <- "FINE"
+dag_absolute <- SSPICE::build_DAG(absolute, analyze = FALSE)
+stopifnot(all(dag_absolute$Bt[1:2, "FINE"] == -1),
+          all(dag_absolute$Bt[1:2, "DETTAGLIO"] == 0))
+dag_absolute$Bt
+
+or_routes <- make_routes(c(
+  "INIZIO;1;1;1;0;0;.;.",
+  "MEZZO_A;1;1;1;1;0;.;.",
+  "MEZZO_B;1;1;1;1;0;.;.",
+  "FINE;1;1;1;0;0;.;."
+))
+dag_or <- SSPICE::build_DAG(or_routes, analyze = FALSE)
+stopifnot("VOR1" %in% dag_or$varnames)
+dag_or$routes_grouped
+
+xor_routes <- make_routes(c(
+  "INIZIO;1;1;1;0;0;.;.",
+  "NESSUNA_SPESA;1;1;1;-1;98;.;FINE",
+  "IMPORTO;1;0;100000;-1;0;.;.",
+  "DETTAGLIO;2;1;2;0;0;.;.",
+  "FINE;1;1;1;0;0;.;."
+))
+dag_xor <- SSPICE::build_DAG(xor_routes, analyze = FALSE)
+stopifnot("VXOR1" %in% dag_xor$varnames)
+dag_xor$routes_grouped
+```
+
+# Checks before using routing metadata
+
+1. Check names, order, group contiguity and forward targets.
+2. Check types, integer metadata bounds and equidistant categories.
+3. For each jump, check its category, target and pair count.
+4. For each unconditional jump, check V6 = 98, missing V7 and a target in V8.
+5. Inspect `routes_grouped`, `routes_numeric`, `Bt` and isolated nodes.
+6. Prepare a few records with known expected results: ordinary continuation,
+   each conditional jump, every category of an unconditional jump, OR with
+   one/multiple/no selections, and XOR with each alternative and both present.
+7. Compare expectations with the actual record-checking results.
+
+`build_DAG()` checks missing/duplicate names, some group constraints and
+acyclicity. It does not exhaustively validate repeated pairs, out-of-domain
+categories, unknown references or all conventions listed here. Numeric
+conversion may turn unrecognized references into `NA`; absence of an error
+is not a guarantee of correctness.
+
+# Functions defining these rules
+
+The operational rules are derived from `build_DAG()`,
+`convert_routes_str2num()`, `create_incidence_matrix()`, `dummize()`,
+`coarse_groups_OR()`, `coarse_groups_XOR()`, `generate_groups_OR()`,
+`generate_groups_XOR()`, `clean_data()` and `check_all_paths()` in the inspected
+PROJECT copy. This revision changes the documentation, not those functions.

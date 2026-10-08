@@ -12,23 +12,86 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
 # Extended DAG and initial partition
 
-Step 09 adds logical-edit nodes to the DAG and prepares the corresponding data. Step 10 checks the records and partitions them once into `EXACT` and `ERRONEOUS`. Exact records remain unchanged and form the donor pool. Correction processes the records initially classified as erroneous; a pilot limit is applied after partitioning.
+Step 09 inserts logical-edit nodes into the DAG and prepares the corresponding
+data. Step 10 checks the records and partitions them once into `EXACT` and
+`ERRONEOUS` records. Exact records remain unchanged and form the donor pool.
+Correction operates on records that were initially erroneous; a pilot limit
+is applied after partitioning.
 
 ```{r correction-steps}
 source(file.path("scripts", "09_build_extended_DAG.R"))
 source(file.path("scripts", "10_correct_data.R"))
 ```
 
-# Configure a pilot run
+# Configuring a pilot
 
-In the project configuration, `correction_strata = "FPROV"`, `correction_record_limit = 100L`, and `correction_output_dir` specify the example pilot. `correction_control_args` contains temperatures, penalties, the minimum number of donors, the random seed, and the `use_parallel` and `parallel_workers` options. Set these in `scripts/00_config.R` before Step 10. Parallel execution assigns records to workers; inspect the execution summary for the number of workers actually used.
+In the project, `correction_strata = "FPROV"`,
+`correction_record_limit = 100L` and `correction_output_dir` configure the
+example pilot. `correction_control_args` includes temperature, penalties,
+minimum donor counts, seed, `use_parallel` and `parallel_workers`. Set these
+options in `scripts/00_config.R` before Step 10. Parallel work is distributed
+by record; check the effective worker count in the execution summary.
 
-Conditional distributions are precomputed from exact donors by stratum and immediate predecessor. When that predecessor is missing, the algorithm uses the appropriate exact-donor pool. Frozen variables include user-specified variables, exogenous VAUX variables, and OR groups. An active exogenous VAUX retains its original modality; an inactive one may be blanked to `NA`.
+Conditional distributions are precomputed from exact donors by stratum and
+immediate predecessor. Missing predecessors are handled using the appropriate
+pool of exact donors. Distinguish immutable variables (the identifier,
+user-specified variables, and strata when `freeze_strata = TRUE`) from
+variables whose category is locked. An active exogenous auxiliary variable
+retains its original category, whereas an inactive one may become `NA`.
+Logical groups have their own structural treatment; they are not generally
+synonymous with immutable columns.
 
-# Outputs and diagnostics
+# Outputs and diagnosis
 
-Step 10 saves `correction_result.rds`, `corrected_questionnaire_data.rds`, and CSV summaries to the configured output directory. Distinguish corrected from unresolved records and retain their original row and identifier. Persistent logical-edit violations require investigation and appear in the quality analysis.
+Step 10 saves `correction_result.rds`, `corrected_questionnaire_data.rds` and
+CSV summaries in the configured directory. Distinguish corrected records from
+unresolved records and retain their link to the original row and identifier.
+Persistent logical-edit violations require diagnosis and appear in the quality
+assessment.
+
+# Full runs, batches and workers
+
+The example below uses the original extended inputs, not a dataset corrected
+by an earlier run. Execute it from the PROJECT root after the required steps.
+Use an output directory distinct from those of other experiments.
+
+```{r full-run, eval=FALSE}
+run <- new.env(parent = globalenv())
+sys.source("scripts/00_config.R", envir = run)
+run$config$correction_record_limit <- Inf
+run$config$correction_strata <- "FPROV"  # or "STRATUM"
+run$config$correction_batch_size <- 100L
+run$config$correction_resume_batches <- FALSE
+run$config$correction_cache_policy <- "auto"
+run$config$correction_control_args$freeze_strata <- TRUE
+run$config$correction_control_args$use_parallel <- TRUE
+run$config$correction_control_args$parallel_workers <- 6L
+run$config$correction_output_dir <- "output/corrected-full-FPROV"
+stopifnot(!dir.exists(run$config$correction_output_dir))
+sys.source("scripts/10_correct_data.R", envir = run)
+```
+
+`Inf` selects all initially erroneous records. Initially exact records remain
+donors and must not be corrected again. A batch of 100 is the checkpoint unit;
+parallel work is distributed by record. The batch message appears on
+completion, not at startup. Before the first message, processing may include
+reading inputs, the initial check, donor preparation, worker startup and
+correction of the first batch.
+
+The initial routing-check cache and batch checkpoints are separate.
+`correction_cache_policy = "auto"` allows reuse of a valid initial check; it
+does not mean reusing a previous correction. To resume interrupted batches,
+use the same directory and `correction_resume_batches = TRUE`, keeping inputs
+and settings compatible. Do not enable resumption to compare FPROV and STRATUM
+in the same directory. Always inspect the cache reason, reused-batch count and
+effective worker count in the summary.
+
+To freeze FPROV as well when STRATUM is the stratification variable, include
+it explicitly in `correction_immutable_variables`. A variable's statistical
+role is separate from its immutable status. For a comparison that isolates
+the effect of stratification alone, keep the set of immutable variables the
+same in both runs.

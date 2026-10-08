@@ -12,20 +12,24 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
 # Input files
 
 | File | Purpose | Preliminary check |
 |:--|:--|:--|
-| `routing_file.csv` | Nodes, modalities, and routing dependencies | Consistent identifiers; no cycles |
-| `vaux_rules.csv` | Definitions of VAUX auxiliary variables | Noncontradictory conditions and modalities |
-| `logical_edit_rules.csv` | Logical constraints across variables | Consistent modalities and operators |
-| `items_mapping.csv` | Mapping between routing items and data columns | Every referenced item is mapped correctly |
-| `data-raw/input/questionnaire_data.csv` | Responses to check | Agreed record key and missing-value codes |
-| `data-raw/external/*.csv` | Additional information for exogenous VAUX variables | Join key and uniqueness at the intended level |
+| `routing_file.csv` | Nodes, categories and routing dependencies | Consistent identifiers and no cycles |
+| `vaux_rules.csv` | Auxiliary-variable definitions | Consistent conditions and assigned categories |
+| `logical_edit_rules.csv` | Logical constraints between variables | Consistent categories and operators |
+| `items_mapping.csv` | Correspondence between routing codes and observed codes for each variable | Check recoding direction and application in the functions used |
+| `data-raw/input/questionnaire_data.csv` | Responses to be checked | Agreed record key and missing-value codes |
+| `data-raw/external/*.csv` | Additional information for exogenous auxiliary variables | Linkage key and uniqueness at the required level of observation |
 
-The routing, VAUX, and logical-edit metadata in this project use `;` as a separator; `items_mapping.csv` uses a comma. The configuration specifies these paths, the metadata separator, `missing_codes`, and `record_id` (`DB030` in the bundled example). Do not infer a file's schema from its name: check the columns and join key against the actual rules.
+The project's routing, auxiliary-variable and logical-edit metadata use `;`
+as the separator; `items_mapping.csv` uses commas. Configuration specifies
+these paths, the metadata separator, `missing_codes` and `record_id`
+(`DB030` in the included example). Do not infer a file's schema from its name:
+check its columns and key against the actual rules.
 
 ```{r metadata-check}
 source(file.path("scripts", "00_config.R"))
@@ -35,36 +39,48 @@ stopifnot(all(file.exists(c(config$routing_file, config$vaux_file,
 utils::head(utils::read.csv(config$items_mapping_file, check.names = FALSE))
 ```
 
-# Exogenous VAUX variables and observation units
+# Exogenous auxiliary variables and the observation unit
 
-A VAUX variable requiring individual-level information cannot be inferred from a file containing only one respondent per family. In this project, `extfile3.csv` contains `DB030` and `EXIST_MINOR`. The latter indicates whether the family includes at least one individual with `PRESEN_B = 1` and `ETAINT < 15`. VAUX rules must refer to the appropriate external information, joined on `DB030`.
+An auxiliary variable requiring information on individual household members
+cannot be inferred from a file containing only the household respondent.
+In this project, `extfile3.csv` contains `DB030` and `EXIST_MINOR`; the latter
+indicates whether the household contains at least one individual with
+`PRESEN_B = 1` and `ETAINT < 15`. Auxiliary rules must refer to the correct
+external information, linked through `DB030`.
 
-Active exogenous VAUX variables retain their original values during correction. If routing makes them inactive, they may be blanked to `NA`. Check missing values in external sources before interpreting an error as an incorrect response.
+Active exogenous auxiliary variables retain their source value during
+correction; if routing makes them inactive, they may be blanked to `NA`.
+Check missing source values before interpreting an error as an incorrect
+questionnaire response.
 
-# Defining VAUX modalities
+# Defining auxiliary-variable categories
 
-`vaux_rules.csv` has nine headerless columns separated by `;`. Each row contributes to a modality definition; multiple rows with the same variable name and modality form its condition.
+`vaux_rules.csv` has nine columns without a header, separated by `;`.
+Each row contributes to a category definition; multiple rows with the same
+variable name and category form its condition.
 
 | Column | Meaning |
 |:--|:--|
-| V1 | VAUX variable name |
-| V2 | Modality assigned when the condition holds |
-| V3 | Variable referenced by the row |
-| V4, V5 | Optional external source name, without `.csv`, and join key |
-| V6 | Exact value; `BLANK` or `NA` for a missing value |
-| V7, V8 | *Inclusive* interval bounds |
+| V1 | Auxiliary-variable name |
+| V2 | Category assigned when the condition is true |
+| V3 | Variable used in this row |
+| V4, V5 | Optional external-source name without `.csv`, and linkage key |
+| V6 | Exact value; `BLANK` or `NA` denotes a missing value |
+| V7, V8 | Inclusive interval bounds |
 | V9 | Operator following the row, or comparison terminating a calculation |
 
-For logical conditions, the parser automatically opens a parenthesis at the start of each condition and closes it on `NULL`.
+For logical conditions, the parser automatically opens a parenthesis at the
+start of each condition and closes it when it encounters `NULL`.
 
 | Logical token in V9 | Effect |
 |:--|:--|
-| `AND`, `OR` | Connects this row's condition to the next |
-| `) AND (`, `) OR (` | Closes the current group and opens the next |
-| `NULL` | Closes and evaluates the condition for the row's modality |
-| `IN(...)`, `NOT IN(...)` | Tests set membership or nonmembership; `BLANK` denotes a missing value |
+| `AND`, `OR` | Connect this row's condition to the next one |
+| `) AND (`, `) OR (` | Close the current group and open the next one |
+| `NULL` | Close and evaluate the condition for the row's category |
+| `IN(...)`, `NOT IN(...)` | Test membership or non-membership; `BLANK` represents a missing value |
 
-For example, the **logical-only** rule `A = 1 AND (D = 1 OR E = 3)` is represented by:
+For example, the purely logical rule `A = 1 AND (D = 1 OR E = 3)` is
+represented as follows:
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -72,9 +88,11 @@ For example, the **logical-only** rule `A = 1 AND (D = 1 OR E = 3)` is represent
 | VAUX_ESEMPIO | 1 | D | 1 | . | . | `OR` |
 | VAUX_ESEMPIO | 1 | E | 3 | . | . | `NULL` |
 
-In the actual file, V4 and V5 are empty for variables already in the data. When V4 specifies `extfile1`, `extfile2`, or `extfile3`, V5 specifies the join key (`DB030` in the project example).
+In the actual file, V4 and V5 are empty for variables already present in the
+data. If V4 specifies `extfile1`, `extfile2` or `extfile3`, V5 specifies the
+key (`DB030` in the project example).
 
-## Arithmetic-only rules
+## Purely arithmetic rules
 
 | Operation | Simple token in V9 | Grouping token in V9 |
 |:--|:--|:--|
@@ -83,9 +101,12 @@ In the actual file, V4 and V5 are empty for variables already in the data. When 
 | Multiplication | `*` | `) * (` |
 | Division | `/` | `) / (` |
 
-The final row compares the result with a numeric constant using `<n`, `<=n`, `>n`, `>=n`, `=n`, `==n`, or `!=n`. Positive and negative constants are supported (for example, `<-2` or `>=0.5`). The comparison closes the expression and assigns modality V2 to rows where it holds.
+The last row compares the result with a numeric constant: `<n`, `<=n`, `>n`,
+`>=n`, `=n`, `==n` or `!=n`. Positive or negative constants can be used,
+for example `<-2` or `>=0.5`. The comparison closes the expression and assigns
+the V2 category to data rows for which it is true.
 
-For example, the **arithmetic-only** expression `(A+B)*(C-D) >= 10` is represented by:
+Purely arithmetic example, `(A+B)*(C-D) >= 10`:
 
 | V1 | V2 | V3 | V9 |
 |:--|--:|:--|:--|
@@ -94,13 +115,18 @@ For example, the **arithmetic-only** expression `(A+B)*(C-D) >= 10` is represent
 | VAUX_ARIT | 1 | C | `-` |
 | VAUX_ARIT | 1 | D | `>=10` |
 
-Columns V4–V5 and V6–V8 are empty in this example. Simple operators follow R's arithmetic precedence; tokens containing parentheses close one group and open another.
+V4–V5 and V6–V8 are empty in this example. Simple operators follow R's
+arithmetic precedence; tokens containing parentheses close one group and
+open another.
 
 ## Mixed rules
 
-To continue with a logical condition after an arithmetic comparison, write **the comparison, a space, and the connector**: `<10 AND`, `<10 ) AND (`, `>=5 ) OR (`, or `=100 NULL`. `OR` and `) OR (` are also accepted.
+To continue after a comparison with a logical condition, write the comparison
+followed by a space and a connector: `<10 AND`, `<10 ) AND (`,
+`>=5 ) OR (`, or `=100 NULL`. `OR` and `) OR (` are also accepted.
 
-For example, `A < 10 AND (D = 1 OR E = 3)` uses a strict comparison that also works for noninteger values of A:
+Example: `A < 10 AND (D = 1 OR E = 3)`. This is a strict comparison and also
+works when A contains decimal values.
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -108,7 +134,8 @@ For example, `A < 10 AND (D = 1 OR E = 3)` uses a strict comparison that also wo
 | VAUX_MISTA | 1 | D | 1 | . | . | `OR` |
 | VAUX_MISTA | 1 | E | 3 | . | . | `NULL` |
 
-An example of grouped arithmetic followed by logic is `((A + B) * (C - D) / F >= 5) OR (E = 1 AND A = 2)`:
+Example combining grouped arithmetic and logic:
+`((A + B) * (C - D) / F >= 5) OR (E = 1 AND A = 2)`.
 
 | V1 | V2 | V3 | V6 | V7 | V8 | V9 |
 |:--|--:|:--|:--|:--|:--|:--|
@@ -120,20 +147,33 @@ An example of grouped arithmetic followed by logic is `((A + B) * (C - D) / F >=
 | VAUX_CALCOLO | 1 | E | 1 | . | . | `AND` |
 | VAUX_CALCOLO | 1 | A | 2 | . | . | `NULL` |
 
-Missing values in calculations make conditions false, leaving the VAUX variable as `NA` when no modality applies. The available grouping operators close one group and open another; they do not support arbitrarily nested parentheses. `NOT IN(...)` supports set nonmembership, but general `NOT` and `XOR` between predicates are not reliably supported. Check for overlapping modalities and rows without a true condition before applying new rules to real data.
+Missing values in calculations produce conditions that are not true and leave
+the auxiliary variable at `NA` if no category applies. The available grouping
+tokens close one group and open another; they do not provide arbitrarily
+nested parentheses. `NOT IN(...)` supports set non-membership; general `NOT`
+and `XOR` between predicates are not reliably supported. Check overlapping
+categories and rows for which no condition is true before applying new rules
+to real data.
 
-## Project example: VAUX rules
+## Application example: project auxiliary variables
 
-In this project, `VAUX7` is derived from the external file `extfile3.csv`. The key `DB030` joins each family to `EXIST_MINOR`, which is computed across all its members. Its two modalities are defined by:
+In the project, `VAUX7` is derived from the external file `extfile3.csv`.
+The `DB030` key links each household to `EXIST_MINOR`, calculated over the
+whole household. Its two categories are defined by:
 
 ```text
 VAUX7;1;EXIST_MINOR;extfile3;DB030;1;.;.;NULL
 VAUX7;2;EXIST_MINOR;extfile3;DB030;0;.;.;NULL
 ```
 
-`EXIST_MINOR` cannot be reconstructed from the questionnaire respondent alone. It is obtained from the presence of at least one member with `PRESEN_B = 1` and `ETAINT < 15` in the individual-level file used to prepare the external source. The VAUX rule applies after joining on `DB030`; if the join fails, the modality remains missing.
+`EXIST_MINOR` cannot be reconstructed from the questionnaire respondent alone:
+it comes from the presence of at least one member with `PRESEN_B = 1` and
+`ETAINT < 15` in the individual-level file used to prepare the source. The
+auxiliary rule is applied after linkage on `DB030`; when linkage fails, the
+category remains missing.
 
-A second **actual** example is `VAUX_PROP2`, which classifies the sum of the shares `QPROP1 + QPROP2`:
+A second actual example is `VAUX_PROP2`, which classifies the sum
+`QPROP1 + QPROP2`:
 
 ```text
 VAUX_PROP2;1;QPROP1;;;;;;+
@@ -142,11 +182,31 @@ VAUX_PROP2;2;QPROP1;;;;;;+
 VAUX_PROP2;2;QPROP2;;;;;;=100
 ```
 
-These rows use arithmetic only, without logical operators. Inspect the prepared project outputs without changing the data:
+These rows use arithmetic only, without logical operators. They can be
+inspected in the project outputs without modifying the data:
 
 ```{r vaux-case-study, eval=FALSE}
-# Run this example from the SSPICE project root after Step 02.
+# Run from the root of your project copy.
 d <- readRDS("output/prepared-data/prepared_questionnaire_data.rds")
 table(d$VAUX7, useNA = "ifany")
 table(d$VAUX_PROP2, useNA = "ifany")
 ```
+
+# Dedicated routing guide
+
+The complete `routing_file.csv` schema, variable types, categories,
+conditional and unconditional jumps, and OR/XOR groups are described in
+[Building the routing file](routing-02b.html). Do not infer routing conventions
+from the auxiliary-variable file: the two formats have different purposes
+and fields.
+
+# Consistency of external sources
+
+Before preparation, check key uniqueness, key types, coverage of questionnaire
+DB030 values and availability of the values required by the rules. A complete
+questionnaire file combined with reduced external sources can produce many
+missing categories even when the original responses have not changed. When
+extracting a sample, subset each source using the same keys and document links
+that were already absent from the source. After replacing sources, regenerate
+prepared data, checks and extended data, and verify cache validity before
+correction.

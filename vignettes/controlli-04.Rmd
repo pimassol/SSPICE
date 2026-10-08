@@ -1,9 +1,9 @@
 ---
-title: "04 — Data preparation, routing checks, and violation localization"
+title: "04 — Data preparation, routing checks and localization"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{04 — Data preparation, routing checks, and violation localization}
+  %\VignetteIndexEntry{04 — Data preparation, routing checks and localization}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,25 +12,49 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
-# Prepare and check the data
+# Preparing and checking data
 
-Step 02 prepares questionnaire data and VAUX variables; Step 03 checks routing against the canonical DAG. A missing response may be correct for an inactive question but erroneous for an active one. The diagnosis depends on the question's position in the graph and the observed modalities.
+Step 02 prepares questionnaire data and auxiliary variables; Step 03 checks
+the prepared data against the canonical routing DAG. A missing response may
+be valid for an inactive question and invalid for an active question: the
+diagnosis depends on the graph structure and observed response categories.
 
 ```{r routing-steps}
 source(file.path("scripts", "02_prepare_data.R"))
 source(file.path("scripts", "03_run_routing_check.R"))
 ```
 
-`03_run_routing_check.R` saves `routing_check_results.rds`, `full_report.csv`, `summary_by_record.csv`, `summary_by_variable.csv`, and `execution_time.csv` under `output/routing-check/`. Inspect the detailed report for affected variables and the summaries for systematic metadata errors.
+`03_run_routing_check.R` saves `routing_check_results.rds`, `full_report.csv`,
+`summary_by_record.csv`, `summary_by_variable.csv` and `execution_time.csv`
+in `output/routing-check/`. Use the detailed report to identify the variables
+involved and the summaries to investigate systematic metadata errors.
 
-# Validate violation localization
+# Validating localization
 
-When a reference report is available in the configuration, `06_validate_violation_localization.R` compares localized violations against it. Comparison with known answers provides different evidence from a simple count of detected errors.
+`06_validate_violation_localization.R` compares localized violations with a
+reference report when one is available in the configuration. Comparing results
+with known truth is distinct from simply counting detected errors.
 
 ```{r localization}
 source(file.path("scripts", "06_validate_violation_localization.R"))
 ```
 
-Before attributing a violation to a record, inspect the item mapping and external VAUX sources: an inconsistent rule can create many apparent errors.
+Before attributing a violation to a record, inspect the item mapping and
+external sources used by auxiliary variables: an inconsistent rule can
+produce many apparent errors.
+
+# Representation of prepared data
+
+Retain the original questionnaire data. Preparation may replace OR/XOR members
+with canonical nodes and convert text columns into presence indicators.
+Matching the column names to the DAG is necessary, but does not verify that
+identifier and code semantics have been preserved. See
+[Building the routing file](routing-02b.html) for these conventions.
+
+A ground-truth report is usable only when it refers to the actual records and
+violations in the analysed dataset. A matching key-column name is not enough.
+Do not associate synthetic violation ground truth with the real questionnaire
+data. Without a consistent reference, report localization results without
+supervised accuracy metrics.

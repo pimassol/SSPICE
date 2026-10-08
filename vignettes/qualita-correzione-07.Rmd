@@ -12,27 +12,84 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
-# Why assess correction outcomes?
+# Why assess the result?
 
-An algorithm finishing does not imply that every record has been corrected. Step 11 compares original and corrected data, reruns final checks against the extended DAG, and produces a quality report. When available, it also uses the initial check, exact donor records, elapsed time, and donor provenance.
+Algorithm termination does not imply that all records are correct. Step 11
+compares original and corrected data, uses the final extended-DAG routing check
+stored in the correction result, and produces a quality report. It also uses
+the initial check, exact donor records, elapsed time and donor provenance when
+available.
 
 ```{r report-step}
 source(file.path("scripts", "11_correction_quality_report.R"))
 ```
 
-The script reads `correction_result.rds` and `corrected_questionnaire_data.rds` from Step 10, as well as `prepared_data_with_logical_edits.rds` and `questionnaire_extended_DAG.rds` from Step 09. It produces `correction_quality_report.rds`, an HTML report, and CSV tables in `correction_quality_output_dir` or the `quality-report` subdirectory of the correction output.
+The script reads `correction_result.rds` and
+`corrected_questionnaire_data.rds` from Step 10, together with
+`prepared_data_with_logical_edits.rds` and `questionnaire_extended_DAG.rds`
+from Step 09. It produces `correction_quality_report.rds`, an HTML report and
+CSV tables in `correction_quality_output_dir`, or in the `quality-report`
+subdirectory of the correction output directory.
 
-# Interpreting the report
+# Reading the report
 
 | Question | Evidence to inspect |
 |:--|:--|
-| How many records were resolved? | Record summary, with unresolved records shown separately |
-| Are there remaining violations? | Initial and final reports by record and variable |
-| Which values changed? | Change tables and counts by type of change |
-| Were the donors eligible? | Provenance and diagnostics for the `EXACT` donor pool |
-| Were constrained variables respected? | Audit of immutable variables and exogenous VAUX variables |
-| How much time did the process take? | Elapsed time and execution summary |
+| How many records are resolved? | Record summary, separating resolved and unresolved cases |
+| Do any violations remain? | Initial and final reports by record and variable |
+| Which values changed? | Change tables and breakdown by change type |
+| Were donors admissible? | Provenance and diagnostics of the EXACT pool |
+| Were constrained variables respected? | Audit of immutable variables and exogenous auxiliary variables |
+| What is the computational cost? | Elapsed time and execution summary |
 
-Assess the resolution rate separately from the persistence of errors. A record may remain unresolved; do not treat it as corrected solely because a value changed. Retain the full output and pilot settings to make the comparison reproducible.
+Assess the resolution rate separately from persistent errors. A record may
+remain unresolved; do not classify it as corrected merely because a value
+changed. Retain complete outputs and pilot settings to reproduce comparisons.
+
+# Selecting the result to assess
+
+Step 11 must not inadvertently use the default pilot directory after a run
+was saved elsewhere. Use the same output directory as Step 10 and the same
+original extended data. Run this example from the project root:
+
+```{r quality-config, eval=FALSE}
+pkgload::load_all(".", export_all = FALSE, helpers = FALSE)
+run <- new.env(parent = globalenv())
+sys.source("scripts/00_config.R", envir = run)
+run$config$correction_output_dir <- "output/corrected-full-FPROV"
+run$config$correction_quality_output_dir <- file.path(
+  run$config$correction_output_dir, "quality-report"
+)
+run$correction_quality_report <- SSPICE::correction_quality_report
+run$`%||%` <- function(x, y) if (is.null(x)) y else x
+sys.source("scripts/11_correction_quality_report.R", envir = run)
+```
+
+The function uses `final_check` when supplied, otherwise
+`correction_result$final_routing_check`. It does not automatically run a new,
+independent validation of the final dataset. The script may, however,
+recompute the initial check if neither a configured nor a saved check is found.
+
+# Interpreting the counts
+
+`records_resolved` measures constraint resolution, not the statistical accuracy
+of imputation relative to unknown true values. `records_changed` includes
+modified records even if they remain unresolved. `fills`, `blanks` and
+`mode_changes` distinguish missing-to-value, value-to-missing and
+value-to-different-value transitions, respectively. The percentage of changed
+cells uses the `editable_cells` denominator calculated by the report, not all
+cells in the original questionnaire.
+
+Quantitative/qualitative classifications are inferred from routing metadata
+and the classes of the prepared columns. Text may already have been converted
+to indicators: `string_variables = 0` does not show that the original
+questionnaire contained no open-ended questions. A numeric identifier can be
+classified as quantitative while retaining the separate RECORD_ID role.
+
+When comparing runs, retain inputs, seed, controls, donors and immutable
+variables. Changing the stratification variable with `freeze_strata = TRUE`
+also changes the automatically frozen variable. Similar change counts do not
+imply identical imputed values. Compare correction time separately from total
+elapsed time and cache reuse.

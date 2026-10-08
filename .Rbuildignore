@@ -1,3 +1,6 @@
 ^data-raw$
 ^scripts$
 ^output$
+^build$
+^\.git$
+^\.gitignore$

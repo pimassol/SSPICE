@@ -40,6 +40,29 @@ Package dependencies are declared in `DESCRIPTION`. Building the vignettes also 
 
 The example metadata include `routing_file.csv`, `vaux_rules.csv`, `logical_edit_rules.csv`, and `items_mapping.csv`. External input files are named `extfile1.csv`, `extfile2.csv`, and `extfile3.csv`.
 
+## Example dataset
+
+The example questionnaire contains **15,000 original records** and
+**332 columns**, including `STRATUM`. It is an input dataset before
+correction, not a corrected output.
+
+The sample retains all **4,842 records classified as exact** by the
+full-data extended-DAG check and selects **10,158 initially erroneous
+records**, proportionally by `FPROV`, using seed 123. Original row
+order and the CSV representation of selected records are retained.
+
+External sources are subset using the same `DB030` identifiers:
+`extfile1.csv` and `extfile3.csv` each contain 15,000 matching records;
+`extfile2.csv` contains 14,988. The 12 missing links already exist in
+the source and were not introduced by sampling.
+
+Working inputs in `data-raw/` and bundled inputs in
+`inst/extdata/SSPICE/` are identical at preparation time.
+
+The eight English vignettes include
+`vignettes/routing-02b.Rmd`, covering routing fields, variable types,
+conditional and unconditional jumps, and OR/XOR groups.
+
 ## Prepare inputs for the operational scripts
 
 Run the numbered scripts from the **repository root**. They resolve input and output paths through `scripts/00_config.R`. The bundled example files are stored under `inst/extdata/SSPICE/`, while the scripts expect a working copy under `data-raw/`. Create that working copy once from R:
@@ -74,7 +97,7 @@ install.packages("testthat")
 testthat::test_local(".", reporter = "summary")
 ```
 
-The package has been cloned, tested, and installed successfully from a fresh checkout on Windows with R 4.4.3. This check does not establish compatibility with every operating system or R version.
+A previous revision was cloned, tested, and installed from a fresh checkout on Windows with R 4.4.3. The updated dataset and documentation require validation for this revision; the earlier check does not establish compatibility with every operating system or R version.
 
 ## License
 

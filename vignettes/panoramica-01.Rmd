@@ -1,9 +1,9 @@
 ---
-title: "01 — Overview and SSPICE workflow"
+title: "01 — SSPICE overview and workflow"
 author: "Pierpaolo Massoli"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{01 — Overview and SSPICE workflow}
+  %\VignetteIndexEntry{01 — SSPICE overview and workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,29 +12,37 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> The operational examples assume that the SSPICE project root is the working directory. They are displayed but not run when the vignette is built because they require project data.
+> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
 
-# Why SSPICE?
+# Why SSPICE
 
-SSPICE represents questionnaire dependencies as a directed acyclic graph (DAG). It uses the graph to check routing, locate inconsistencies, construct variable domains and formal rules, correct inconsistent records, and assess correction outcomes. Missing values are meaningful: an inactive question must be blank, whereas an active question may require a response.
+SSPICE represents the logical dependencies of a questionnaire using a directed
+acyclic graph (DAG). It uses this graph to check response paths, localize
+inconsistencies, construct domains and formal rules, correct erroneous records,
+and assess the results. Missing values have a structural meaning: an inactive
+question must be blank, whereas an active question may require a response.
 
-# Workflow
+# Operational workflow
 
-```text
-Routing metadata ──> canonical DAG ───────────────────┐
-                          │                            │
-Data + external sources ──> prepared data ──> checks   │
-                          │                  │         │
-                          └──> logical edits ──> extended DAG
-                                                  │
-                                    correction <──┘
-                                        │
-                                   quality report
+| Stage | Main input | Result |
+|:--|:--|:--|
+| 01 | Routing metadata | Canonical DAG |
+| 02–03 | Data, metadata and external sources | Prepared data and routing check |
+| 04–05 | DAG and item mapping | Domains, rules and Horn validation |
+| 06 | Prepared data and routing check | Violation localization |
+| 07–08 | DAG | Synthetic data and admissible-pattern count |
+| 09–10 | Extended data and extended DAG | Correction of erroneous records |
+| 11 | Correction results and original extended data | Quality report |
 
-Canonical DAG ──> VARDOM / RULES ──> Horn validation
-```
-
-The operational steps are in `scripts/`: `00_config.R` specifies paths and options; `01_build_DAG.R` builds the graph; `02_prepare_data.R` prepares records; `03_run_routing_check.R` checks routing; `04_create_VARDOM_and_RULES.R` generates constraints; `05_validate_horn_theory.R` and `06_validate_violation_localization.R` assess their properties; and `09_build_extended_DAG.R`, `10_correct_data.R`, and `11_correction_quality_report.R` perform correction and evaluation. Scripts 07 and 08 generate synthetic data and count admissible patterns, respectively.
+The operational steps are in `scripts/`. `00_config.R` defines paths and
+options; `01_build_DAG.R` builds the graph; `02_prepare_data.R` prepares
+records; `03_run_routing_check.R` checks routing; and
+`04_create_VARDOM_and_RULES.R` produces constraints.
+`05_validate_horn_theory.R` and `06_validate_violation_localization.R`
+perform the corresponding validations. `09_build_extended_DAG.R`,
+`10_correct_data.R` and `11_correction_quality_report.R` complete the
+correction and assessment workflow. Scripts 07 and 08 respectively generate
+synthetic data and count admissible patterns.
 
 ```{r workflow}
 source(file.path("scripts", "00_config.R"))
@@ -43,4 +51,21 @@ source(file.path("scripts", "02_prepare_data.R"))
 source(file.path("scripts", "03_run_routing_check.R"))
 ```
 
-Run the steps in order and inspect intermediate outputs before starting correction. Diagnostic quality depends on the quality of the metadata.
+Run the steps in order and inspect intermediate outputs before starting
+correction. Metadata quality determines the quality of the diagnoses.
+
+# Reading order
+
+1. [Metadata and external sources](metadati-02.html).
+2. [Building the routing file](routing-02b.html): fields, types, conditional
+   and unconditional jumps, and OR/XOR groups.
+3. [Building the DAG](dag-03.html) and
+   [data preparation and checks](controlli-04.html).
+4. [Domains and rules](regole-05.html).
+5. [Correction](correzione-06.html) and
+   [correction quality](qualita-correzione-07.html).
+
+Instructions such as `source("scripts/...")` refer to a source-project copy
+containing the required scripts and data. Installing the package does not
+recreate the PROJECT directory. The routing guide also contains small examples
+using `SSPICE::build_DAG()` directly, independently of the application data.
