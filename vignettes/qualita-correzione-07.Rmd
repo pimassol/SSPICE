@@ -58,7 +58,7 @@ original extended data. Run this example from the project root:
 pkgload::load_all(".", export_all = FALSE, helpers = FALSE)
 run <- new.env(parent = globalenv())
 sys.source("scripts/00_config.R", envir = run)
-run$config$correction_output_dir <- "output/corrected-full-FPROV"
+run$config$correction_output_dir <- "output/corrected-full-STRATUM"
 run$config$correction_quality_output_dir <- file.path(
   run$config$correction_output_dir, "quality-report"
 )

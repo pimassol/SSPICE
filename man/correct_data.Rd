@@ -86,3 +86,28 @@ correction. With freeze_strata = TRUE, stratum membership remains
 unchanged.
 }
 % SSPICE-STRATUM-CODES-END
+
+% SSPICE-STARTUP-NOTE-BEGIN
+\section{Preparation before the first batch}{
+Before record correction begins, SSPICE prepares or reuses
+conditional distributions, donor information, variable domains
+and other supporting structures. Parallel execution also requires
+worker initialization. Step 10 performs an initial routing check
+unless a valid cached result is available.
+
+Preparation time depends on the number of variables and records,
+the number of categories and strata, and the routing structure.
+Computing conditional distributions can take appreciable time
+before the first batch starts.
+
+The first batch-completion message appears only after preparation
+and processing of that batch. A delay before this message does not
+by itself indicate that execution has stalled.
+
+Distinguish total script elapsed time from the correction time
+reported in the output. Their difference is not a complete measure
+of initialization time, because some preparation may occur within
+the timed correction call. Measuring individual preparation stages
+requires separate timing.
+}
+% SSPICE-STARTUP-NOTE-END

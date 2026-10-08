@@ -29,7 +29,7 @@ source(file.path("scripts", "10_correct_data.R"))
 
 # Configuring a pilot
 
-In the project, `correction_strata = "FPROV"`,
+In the project, `correction_strata = "STRATUM"`,
 `correction_record_limit = 100L` and `correction_output_dir` configure the
 example pilot. `correction_control_args` includes temperature, penalties,
 minimum donor counts, seed, `use_parallel` and `parallel_workers`. Set these
@@ -63,14 +63,14 @@ Use an output directory distinct from those of other experiments.
 run <- new.env(parent = globalenv())
 sys.source("scripts/00_config.R", envir = run)
 run$config$correction_record_limit <- Inf
-run$config$correction_strata <- "FPROV"  # or "STRATUM"
+run$config$correction_strata <- "STRATUM"
 run$config$correction_batch_size <- 100L
 run$config$correction_resume_batches <- FALSE
 run$config$correction_cache_policy <- "auto"
 run$config$correction_control_args$freeze_strata <- TRUE
 run$config$correction_control_args$use_parallel <- TRUE
 run$config$correction_control_args$parallel_workers <- 6L
-run$config$correction_output_dir <- "output/corrected-full-FPROV"
+run$config$correction_output_dir <- "output/corrected-full-STRATUM"
 stopifnot(!dir.exists(run$config$correction_output_dir))
 sys.source("scripts/10_correct_data.R", envir = run)
 ```
@@ -105,3 +105,28 @@ South (4), and Islands (5). It is used for stratification during
 correction. With freeze_strata = TRUE, stratum membership remains
 unchanged.
 <!-- SSPICE-STRATUM-CODES-END -->
+
+<!-- SSPICE-STARTUP-NOTE-BEGIN -->
+## Preparation before the first batch
+
+Before record correction begins, SSPICE prepares or reuses
+conditional distributions, donor information, variable domains
+and other supporting structures. Parallel execution also requires
+worker initialization. Step 10 performs an initial routing check
+unless a valid cached result is available.
+
+Preparation time depends on the number of variables and records,
+the number of categories and strata, and the routing structure.
+Computing conditional distributions can take appreciable time
+before the first batch starts.
+
+The first batch-completion message appears only after preparation
+and processing of that batch. A delay before this message does not
+by itself indicate that execution has stalled.
+
+Distinguish total script elapsed time from the correction time
+reported in the output. Their difference is not a complete measure
+of initialization time, because some preparation may occur within
+the timed correction call. Measuring individual preparation stages
+requires separate timing.
+<!-- SSPICE-STARTUP-NOTE-END -->

@@ -42,7 +42,7 @@ config <- list(
   max_memo_states = 5000000L,
   root_variables = NULL,
   max_paths_per_partition = 1e6,
-  correction_strata = "FPROV",
+  correction_strata = "STRATUM",
   correction_immutable_variables = character(),
   correction_record_limit = 100L,
   correction_donor_data_file = NULL,
