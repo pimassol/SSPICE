@@ -4,16 +4,41 @@
 #' logical-edit variables. The latter reports every LEDIT equal to `NA`, even
 #' when an earlier path violation prevents that node from being reached.
 #'
+#' @details
+#' \code{full_report} has one row per reported violation, with the record key,
+#' variable labels, error code and message. \code{summary_by_rec} groups by
+#' identifier and message, so multiple rows can represent one record.
+#' \code{summary_by_var} groups by variable and message. Consistent records
+#' are absent from these summaries. \code{violation_source} is added to the
+#' full report only when logical-edit names are supplied.
+#' Item mapping translates dataset codes to structural routing codes without
+#' modifying the input records. See the routing guide for the mapping contract.
+#'
 #' @param dset_data Record-level data aligned with the routing DAG.
 #' @param routes Processed numeric routing table.
 #' @param Bt Transposed incidence matrix.
 #' @param varkey Name of the record identifier column.
-#' @param items.maps File name of the item-mapping CSV file.
+#' @param items.maps File name of the mapping CSV. Use a header-only file when
+#'   no recoding is needed. Columns are variable, routing code, dataset code.
 #' @param path.items.maps Directory containing the item-mapping file.
 #' @param logical_edit_names Optional character vector naming logical-edit
 #'   variables. `NULL` preserves the original routing-only behaviour.
 #' @return A list containing `full_report`, `summary_by_rec`,
 #'   `summary_by_var`, `record_id`, and `logical_edit_names`.
+#' @examples
+#' routes <- data.frame(V1 = c("ID", "Q", "END"),
+#'   V2 = c(1, 2, 1), V3 = c(1, 1, 1), V4 = c(9999, 2, 1),
+#'   V5 = 0, V6 = 0, V7 = NA, V8 = NA)
+#' dag <- build_DAG(routes, analyze = FALSE)
+#' x <- data.frame(ID = 1:2, Q = c(1, 2), END = c(1, 1))
+#' mapping <- tempfile(fileext = ".csv")
+#' write.csv(data.frame(varname = character(), item_route = numeric(),
+#'                     item_dataset = numeric()), mapping, row.names = FALSE)
+#' checked <- routing_check(x, dag$routes_numeric, dag$Bt, "ID",
+#'                          basename(mapping), dirname(mapping))
+#' checked$full_report
+#' unlink(mapping)
+#'
 #' @export
 routing_check <- function(
   dset_data,

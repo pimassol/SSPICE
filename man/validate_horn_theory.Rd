@@ -17,11 +17,11 @@ validate_horn_theory(
 \arguments{
 \item{dag}{A DAG object produced by the SSPICE DAG-building pipeline.}
 
-\item{rules_file}{Optional path to a `RULES.dat` file to compare with the
-elementary rules generated directly from `Bt`.}
+\item{rules_file}{Optional path to a \code{RULES.dat} file to compare with the
+elementary rules generated directly from \code{Bt}.}
 
 \item{items_mapping_file}{Optional path to the item-mapping CSV file used
-to express modal values in the same coding adopted by `RULES.dat`.}
+to express modal values in the same coding adopted by \code{RULES.dat}.}
 
 \item{n_random}{Number of random multi-seed closure tests.}
 
@@ -32,10 +32,19 @@ to express modal values in the same coding adopted by `RULES.dat`.}
 \item{add_bridges}{Whether to add technical VALUE-to-FILLED implications.}
 }
 \value{
-An object of class `sspice_horn_validation`.
+An object of class \code{sspice_horn_validation}.
 }
 \description{
 Builds the elementary Horn basis induced by the modal rows of the
 transposed incidence matrix, verifies empirical closure equivalence, and
 evaluates rule indispensability through a deletion test.
+}
+
+\details{
+Inspect \code{summary}, \code{canonical_tests}, \code{closure_tests},
+\code{closure_failures}, \code{minimality_tests}, and
+\code{stored_rule_comparison}. Rule tables are retained in
+\code{elementary_rules}, \code{closure_basis} and \code{complete_rule_set}.
+Random multi-seed closure checks provide empirical evidence, not an exhaustive
+proof over all subsets. The deletion tests assess rule indispensability.
 }

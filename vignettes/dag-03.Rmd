@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # From routing metadata to a graph
 

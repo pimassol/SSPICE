@@ -73,30 +73,11 @@
     integer(1L)
   )
   minimum <- suppressWarnings(as.numeric(routes[, 3L]))
-  item_mapping <- NULL
-  if (!is.null(items_mapping_file) && file.exists(items_mapping_file)) {
-    item_mapping <- tryCatch(
-      utils::read.csv(
-        items_mapping_file,
-        header = TRUE,
-        stringsAsFactors = FALSE,
-        check.names = FALSE
-      ),
-      error = function(error) NULL
-    )
-    if (!is.null(item_mapping) && nrow(item_mapping)) {
-      names_mapping <- names(item_mapping)
-      columns <- c(
-        if ("varname" %in% names_mapping) "varname" else names_mapping[1L],
-        if ("new" %in% names_mapping) "new" else names_mapping[2L],
-        if ("old" %in% names_mapping) "old" else names_mapping[3L]
-      )
-      item_mapping <- item_mapping[, columns, drop = FALSE]
-      names(item_mapping) <- c("variable", "new", "old")
-    } else {
-      item_mapping <- NULL
-    }
-  }
+  item_mapping <- .sspice_read_item_mapping(items_mapping_file)
+  .sspice_validate_item_mapping(
+    item_mapping, variable_names, number_items, minimum,
+    suppressWarnings(as.numeric(routes[, 4L]))
+  )
   list(
     incidence = incidence,
     B = t(incidence),
@@ -127,25 +108,6 @@
 
 .sspice_oracle_dummy <- function(record, oracle) {
   values <- as.list(record[1L, oracle$variable_names, drop = FALSE])
-  if (!is.null(oracle$item_mapping) && nrow(oracle$item_mapping)) {
-    for (variable in intersect(
-      unique(as.character(oracle$item_mapping$variable)),
-      names(values)
-    )) {
-      mapping <- oracle$item_mapping[
-        as.character(oracle$item_mapping$variable) == variable,
-        ,
-        drop = FALSE
-      ]
-      current <- values[[variable]][1L]
-      if (is.na(current)) next
-      matched <- which(
-        as.character(mapping$new) == as.character(current)
-      )
-      if (length(matched)) values[[variable]] <- mapping$old[matched[1L]]
-    }
-  }
-
   # Oracles built before routing-aware string handling, including compact
   # test fixtures, retain the original package dummy encoding.
   if (is.null(oracle$declared_number_items) ||
@@ -168,7 +130,9 @@
     function(value) is.na(value[[1L]]),
     logical(1)
   )
-  encoding_values <- values
+  encoding_values <- .sspice_routing_positions(
+    values, number_items, oracle$minimum, oracle$maximum, oracle$item_mapping
+  )
   string_indices <- oracle$string_indices %||% which(
     !is.na(declared_number_items) & declared_number_items == 0L
   )

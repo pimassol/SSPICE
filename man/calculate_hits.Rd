@@ -15,8 +15,8 @@ columns are destination nodes.}
 \item{tol}{Convergence tolerance for the largest absolute score change.}
 }
 \value{
-A list containing `authority`, `hub`, `iterations`, and
-  `converged`.
+A list containing \code{authority}, \code{hub}, \code{iterations}, and
+  \code{converged}.
 }
 \description{
 Calculates hub and authority scores for the nodes of a directed graph by

@@ -21,23 +21,23 @@ correction_quality_report(
 \arguments{
 \item{original_data}{Data frame before correction.}
 
-\item{correction_result}{Object returned by [correct_data()].}
+\item{correction_result}{Object returned by \code{\link{correct_data}}.}
 
 \item{dag}{SSPICE DAG used for correction.}
 
 \item{corrected_data}{Optional corrected data frame. By default,
-`correction_result$corrected_data` is used.}
+\code{correction_result$corrected_data} is used.}
 
 \item{initial_check}{Optional routing-check object for the input data.}
 
 \item{final_check}{Optional routing-check object for the corrected data.
-By default, `correction_result$final_routing_check` is used.}
+By default, \code{correction_result$final_routing_check} is used.}
 
 \item{donor_data}{Optional immutable donor data used to estimate post-hoc
 uncertainty for filled or changed base variables.}
 
-\item{record_id}{Record identifier; defaults to `dag$record_id` or the first
-column of `correction_result$record_summary`.}
+\item{record_id}{Record identifier; defaults to \code{dag$record_id} or the first
+column of \code{correction_result$record_summary}.}
 
 \item{output_dir}{Optional directory in which CSV, RDS, and HTML report
 files are written.}
@@ -49,7 +49,7 @@ represented in external run metadata.}
 from input records passing the initial check or supplied separately.}
 }
 \value{
-An object of class `sspice_correction_quality_report`.
+An object of class \code{sspice_correction_quality_report}.
 }
 \description{
 Produces read-only diagnostics describing the input data, violations before
@@ -60,7 +60,28 @@ or any input record.
 }
 \details{
 Variable measurement type is determined without heuristic interpretation:
-textual columns are `STRING`; non-textual routing nodes with `nitems == 1`
-and `minval < maxval` are `QUANTITATIVE`; all other variables are
-`QUALITATIVE`.
+textual columns are \code{STRING}; non-textual routing nodes with \code{nitems == 1}
+and \code{minval < maxval} are \code{QUANTITATIVE}; all other variables are
+\code{QUALITATIVE}.
+}
+
+\details{
+The result contains \code{summary} (metric/value pairs),
+\code{variable_profile}, \code{record_summary}, \code{unresolved_records},
+\code{violations_before}, \code{violations_after}, \code{changes}, their
+record/variable summaries, \code{uncertainty} and
+\code{quantitative_structural_changes}.
+
+The editable-cell denominator is the number of distinct processed IDs times
+the number of non-ID columns not marked immutable. It is not limited to
+active questions or base variables. Changed-cell percentage is 100 times
+the number of changes divided by this denominator, or NA if it is zero.
+
+Categorical entropy uses natural logarithms; normalized entropy divides by
+the logarithm of positive support size (zero for support size at most one).
+These are post-hoc distributions at the final record, not confidence intervals
+or a replay of sampled proposals. User priors and domain overrides are not
+restored by this reconstruction. Inspect status and distribution source.
+No independent final validation is run: the supplied or stored final check
+is reused. See the quality vignette for interpretation.
 }

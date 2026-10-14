@@ -160,7 +160,7 @@ cached_routing_check <- function(
   )
 }
 
-.sspice_cache_schema_version <- 1L
+.sspice_cache_schema_version <- 2L
 
 .sspice_artifact_manifest_file <- function(cache_file) {
   if (grepl("[.]rds$", cache_file, ignore.case = TRUE)) {

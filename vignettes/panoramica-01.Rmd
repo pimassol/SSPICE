@@ -12,9 +12,11 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Why SSPICE
+
+SSPICE stands for **Systematic Skip-Pattern Integrity and Consistency Engine**.
 
 SSPICE represents the logical dependencies of a questionnaire using a directed
 acyclic graph (DAG). It uses this graph to check response paths, localize
@@ -31,7 +33,8 @@ question must be blank, whereas an active question may require a response.
 | 04–05 | DAG and item mapping | Domains, rules and Horn validation |
 | 06 | Prepared data and routing check | Violation localization |
 | 07–08 | DAG | Synthetic data and admissible-pattern count |
-| 09–10 | Extended data and extended DAG | Correction of erroneous records |
+| 09 | Prepared data, routing and semantic-edit metadata | Extended data and extended DAG |
+| 10 | Extended data and extended DAG | Correction of erroneous records |
 | 11 | Correction results and original extended data | Quality report |
 
 The operational steps are in `scripts/`. `00_config.R` defines paths and
@@ -59,13 +62,72 @@ correction. Metadata quality determines the quality of the diagnoses.
 1. [Metadata and external sources](metadati-02.html).
 2. [Building the routing file](routing-02b.html): fields, types, conditional
    and unconditional jumps, and OR/XOR groups.
-3. [Building the DAG](dag-03.html) and
+3. [Item mapping](item-mapping-02c.html): observed codes, structural codes,
+   modal positions, jumps, correction and semantic predicates.
+4. [Building the DAG](dag-03.html) and
    [data preparation and checks](controlli-04.html).
-4. [Domains and rules](regole-05.html).
-5. [Correction](correzione-06.html) and
+5. [Domains and rules](regole-05.html).
+6. [Correction](correzione-06.html) and
    [correction quality](qualita-correzione-07.html).
 
 Instructions such as `source("scripts/...")` refer to a source-project copy
 containing the required scripts and data. Installing the package does not
 recreate the PROJECT directory. The routing guide also contains small examples
 using `SSPICE::build_DAG()` directly, independently of the application data.
+
+# Standalone first run
+
+This example needs the installed package only. GATE = 1 skips DETAIL;
+GATE = 2 requires DETAIL. Record 3 deliberately answers a skipped question.
+The first two records are admissible donors. No source files are overwritten.
+
+```{r standalone-workflow, eval=TRUE}
+local({
+  routes <- read.table(text = paste(
+    "ID;1;1;9999;0;0;.;.",
+    "GATE;2;1;2;0;1;1;END",
+    "DETAIL;2;1;2;0;0;.;.",
+    "END;1;1;1;0;0;.;.", sep = "\n"),
+    sep = ";", header = FALSE, na.strings = ".")
+  dag <- SSPICE::build_DAG(routes, analyze = FALSE)
+  raw <- data.frame(ID = 1:3, GATE = c(1, 2, 1),
+                    DETAIL = c(NA, 1, 1), END = c(1, 1, 1))
+  prepared <- SSPICE::prepare_data(raw, dag)
+
+  # The current checker requires a mapping file, even with no recoding.
+  mapping <- tempfile(fileext = ".csv")
+  on.exit(unlink(mapping), add = TRUE)
+  write.csv(data.frame(varname = character(), item_route = numeric(),
+                       item_dataset = numeric()), mapping, row.names = FALSE)
+  check <- SSPICE::routing_check(
+    prepared$data, dag$routes_numeric, dag$Bt, "ID",
+    basename(mapping), dirname(mapping)
+  )
+  print(check$full_report)
+  stopifnot(setequal(unique(check$full_report$ID), 3))
+
+  # Only the erroneous row is sent to correction. Donors are fixed.
+  result <- SSPICE::correct_data(
+    data = prepared$data[3, , drop = FALSE], dag = dag, record_id = "ID",
+    donor_data = prepared$data[1:2, , drop = FALSE],
+    items_mapping_file = mapping,
+    control = SSPICE::correction_control(
+      seed = 123L, max_iterations = 20L, use_parallel = FALSE
+    )
+  )
+  print(result$corrected_data)
+  print(result$record_summary)
+  print(result$unresolved_records)
+  stopifnot(identical(result$corrected_data$ID, prepared$data$ID[3]))
+  # Resolution is read from the final checks, not assumed from termination.
+  print(result$final_routing_check$full_report)
+})
+```
+
+The error report should identify record 3. The correction output remains in
+the prepared representation. Inspect `record_summary$resolved` and
+`unresolved_records`; a stochastic search need not resolve every input.
+
+The full project workflow also includes semantic edits and exogenous sources.
+Its recorded configuration, input files and output directories are required
+to reproduce a run; the small example is not a reproduction of the paper.

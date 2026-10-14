@@ -4,6 +4,14 @@
 #' transposed incidence matrix, verifies empirical closure equivalence, and
 #' evaluates rule indispensability through a deletion test.
 #'
+#' @details
+#' Inspect \code{summary}, \code{canonical_tests}, \code{closure_tests},
+#' \code{closure_failures}, \code{minimality_tests}, and
+#' \code{stored_rule_comparison}. Rule tables are retained in
+#' \code{elementary_rules}, \code{closure_basis} and \code{complete_rule_set}.
+#' Random multi-seed closure checks provide empirical evidence, not an exhaustive
+#' proof over all subsets. The deletion tests assess rule indispensability.
+#'
 #' @param dag A DAG object produced by the SSPICE DAG-building pipeline.
 #' @param rules_file Optional path to a `RULES.dat` file to compare with the
 #'   elementary rules generated directly from `Bt`.

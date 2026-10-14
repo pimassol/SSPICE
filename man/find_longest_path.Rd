@@ -18,9 +18,9 @@ are used, followed by integer node indices when row names are unavailable.}
 \item{end_node}{Index of the destination node.}
 }
 \value{
-A list containing `path`, `length`, `edge_length`, and
-  `exists_path`. For backward compatibility, `length` is the number of
-  nodes in the path; `edge_length` is the number of traversed edges.
+A list containing \code{path}, \code{length}, \code{edge_length}, and
+  \code{exists_path}. For backward compatibility, \code{length} is the number of
+  nodes in the path; \code{edge_length} is the number of traversed edges.
 }
 \description{
 Finds a longest directed path between two selected nodes of a directed

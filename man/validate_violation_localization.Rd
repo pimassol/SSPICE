@@ -7,7 +7,7 @@
 validate_violation_localization(localization, report = NULL, id_col = NULL)
 }
 \arguments{
-\item{localization}{Result returned by `localize_routing_violations()`.}
+\item{localization}{Result returned by \code{localize_routing_violations()}.}
 
 \item{report}{Optional data frame containing record-level ground truth.}
 
@@ -19,7 +19,7 @@ A list containing comparisons, metrics, and normalized truth values.
 }
 \description{
 Internal SSPICE function used to evaluate record-level localization when a
-validated ground-truth report is available. With `report = NULL`, it returns
+validated ground-truth report is available. With \code{report = NULL}, it returns
 empty validation tables without interrupting the workflow.
 }
 \keyword{internal}

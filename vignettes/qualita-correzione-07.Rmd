@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Why assess the result?
 
@@ -94,12 +94,28 @@ also changes the automatically frozen variable. Similar change counts do not
 imply identical imputed values. Compare correction time separately from total
 elapsed time and cache reuse.
 
-<!-- SSPICE-STRATUM-CODES-BEGIN -->
-## Territorial stratum codes
+The five STRATUM codes are listed in [Record correction](correzione-06.html).
 
-In the supplied example, STRATUM identifies five geographical
-divisions of Italy: North-West (1), North-East (2), Centre (3),
-South (4), and Islands (5). It is used for stratification during
-correction. With freeze_strata = TRUE, stratum membership remains
-unchanged.
-<!-- SSPICE-STRATUM-CODES-END -->
+# Denominator and post-hoc uncertainty
+
+`editable_cells` equals the number of distinct processed record identifiers
+multiplied by the number of columns whose role is not RECORD_ID and whose
+`immutable` flag is false in `variable_profile`. It is not restricted to
+active questions or base variables: derived or mode-locked columns can enter
+unless marked immutable. `changed_cell_percentage` is
+100 * cells_changed / editable_cells; a zero denominator produces NA.
+Use the same variable representation and immutable settings in comparisons.
+
+For a changed qualitative BASE variable that was not blanked, and when donor
+data are supplied, the report reconstructs a distribution at the final
+corrected record. `selected_probability` is the mass of the chosen value;
+`entropy` is -sum(p * log(p)) using natural logarithms. Normalized entropy
+divides by log(K), where K is the positive-probability support size, and is
+zero when K <= 1. These are post-hoc distribution summaries, not confidence
+intervals, correctness probabilities or the logged probabilities of the
+actual correction proposals. The reconstruction does not restore supplied
+user priors or domain overrides, so do not interpret it as an exact replay
+of runs using those settings. Inspect `status` and `distribution_source`.
+
+Quantitative changes receive structural-action labels instead of categorical
+entropy. `NOT_APPLICABLE` and unavailable distributions are not zero uncertainty.

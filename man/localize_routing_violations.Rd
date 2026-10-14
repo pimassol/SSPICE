@@ -13,23 +13,23 @@ localize_routing_violations(
 )
 }
 \arguments{
-\item{data}{Optional record-level data. Required when `routing_results` is
-`NULL`; also used to retain consistent records in the summary.}
+\item{data}{Optional record-level data. Required when \code{routing_results} is
+\code{NULL}; also used to retain consistent records in the summary.}
 
-\item{dag}{Optional DAG object produced by `build_DAG()`. Required when
-`routing_results` is `NULL`.}
+\item{dag}{Optional DAG object produced by \code{build_DAG()}. Required when
+\code{routing_results} is \code{NULL}.}
 
 \item{id_col}{Optional record-identifier column name.}
 
-\item{items_mapping_file}{Optional path to `items_mapping.csv`.}
+\item{items_mapping_file}{Optional path to \code{items_mapping.csv}.}
 
-\item{routing_results}{Optional result returned by `routing_check()`.}
+\item{routing_results}{Optional result returned by \code{routing_check()}.}
 }
 \value{
-An object of class `sspice_violation_localization`.
+An object of class \code{sspice_violation_localization}.
 }
 \description{
-Internal engine that converts the complete output of `routing_check()` into
+Internal engine that converts the complete output of \code{routing_check()} into
 localization information for validation and iterative repair. An existing
 routing-check result is reused without dropping logical-edit violations.
 }

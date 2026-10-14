@@ -33,10 +33,10 @@ validate_extended_elog(
 \item{max_levels}{Maximum number of levels for an eligible variable.}
 }
 \value{
-An object of class `sspice_elog_validation`.
+An object of class \code{sspice_elog_validation}.
 }
 \description{
 Selects empirical semantic edits, constructs their ELOG variables with
-accepted domain `1 and 2`, and verifies localization against the induced
+accepted domain \code{1 and 2}, and verifies localization against the induced
 semantic ground truth.
 }

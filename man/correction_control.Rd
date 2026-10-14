@@ -43,20 +43,18 @@ correction_control(
 
 \item{penalty_fill, penalty_blank, penalty_flip}{Costs of elementary changes.}
 
-\item{initial_temperature}{Optional initial SA temperature.}
+\item{initial_temperature}{Initial SA temperature. NULL selects the maximum of final_temperature, the floored initial constraint score, and lambda_change times the largest elementary change penalty.}
 
 \item{final_temperature}{Positive final SA temperature.}
 
 \item{cooling_fraction}{Fraction of the chain used for linear cooling.
 The remaining iterations use the constant final temperature.}
 
-\item{max_iterations}{Optional maximum iterations per record.}
+\item{max_iterations}{Maximum iterations per record. NULL uses the number of DAG nodes; the search can terminate earlier.}
 
 \item{top_k}{Maximum number of proposed modes per node.}
 
-\item{beta_fill}{Strength of the original "lucid" routing-improvement
-tilt applied to empirical mode frequencies. Zero gives pure empirical
-sampling.}
+\item{beta_fill}{Compatibility parameter retained in the control object. It is validated and stored, but the current proposal implementation does not use it.}
 
 \item{max_nodes_per_iteration}{Maximum local nodes explored at each MCMC
 iteration. The default reproduces the original node-by-node strategy.}
@@ -83,24 +81,30 @@ is generated for a skipped segment.}
 \item{seed}{Random seed.}
 
 \item{use_parallel}{Whether records are corrected in parallel with a PSOCK
-cluster registered through `doParallel`. The default preserves the
+cluster registered through \code{doParallel}. The default preserves the
 sequential correction path.}
 
 \item{parallel_workers}{Optional positive integer number of workers. When
-`NULL` and `use_parallel = TRUE`, SSPICE uses
-`max(1, parallel::detectCores(logical = TRUE) - 2)`, capped at the number
+\code{NULL} and \code{use_parallel = TRUE}, SSPICE uses
+\code{max(1, parallel::detectCores(logical = TRUE) - 2)}, capped at the number
 of records being corrected. This argument is mainly useful for testing or
 for explicitly limiting memory use.}
 
 \item{batch_size}{Optional positive integer number of records collected per
-parallel batch. `NULL` preserves the previous all-at-once behaviour.}
+parallel batch. \code{NULL} preserves the previous all-at-once behaviour.}
 
 \item{resume_batches}{Whether compatible completed batch checkpoints may be
-reused when `correct_data()` receives a `batch_output_dir`.}
+reused when \code{correct_data()} receives a \code{batch_output_dir}.}
 }
 \value{
-A list of class `sspice_correction_control`.
+A list of class \code{sspice_correction_control}.
 }
 \description{
 Configure SSPICE data correction
+}
+
+\examples{
+control <- correction_control(seed = 123L, use_parallel = FALSE)
+control$max_iterations
+control$final_temperature
 }

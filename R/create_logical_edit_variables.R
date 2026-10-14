@@ -4,6 +4,15 @@
 #' one base variable. Logical and arithmetic expressions are assembled across
 #' consecutive rows. LEDIT variables are appended to the input data.
 #'
+#' @details
+#' Every edit must define categories 1 and 2; both are accepted outcomes.
+#' Conditions are evaluated in file order and the first assignment wins.
+#' Unassigned records retain NA. Arithmetic missing operands are replaced by
+#' zero; missing logical outcomes do not match. These semantics differ from
+#' VAUX arithmetic. The metadata vignette provides a complete example.
+#' The returned data have a \code{logical_edit_definitions} attribute containing
+#' expressions, true-condition counts and newly assigned counts.
+#'
 #' @param inpdata Input data frame.
 #' @param logical_edits_data Nine-column data frame or semicolon-separated file.
 #' @param extDFpath Directory containing external CSV sources used in V4.

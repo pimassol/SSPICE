@@ -4,15 +4,17 @@
 #' @param lambda_change Weight assigned to minimum-change distance.
 #' @param future_weight Weight assigned to the local look-ahead cost.
 #' @param penalty_fill,penalty_blank,penalty_flip Costs of elementary changes.
-#' @param initial_temperature Optional initial SA temperature.
+#' @param initial_temperature Initial SA temperature. NULL selects the maximum of
+#'   final_temperature, the floored initial constraint score, and lambda_change times
+#'   the largest elementary change penalty.
 #' @param final_temperature Positive final SA temperature.
 #' @param cooling_fraction Fraction of the chain used for linear cooling.
 #'   The remaining iterations use the constant final temperature.
-#' @param max_iterations Optional maximum iterations per record.
+#' @param max_iterations Maximum iterations per record. NULL uses the number of DAG
+#'   nodes; the search can terminate earlier.
 #' @param top_k Maximum number of proposed modes per node.
-#' @param beta_fill Strength of the original "lucid" routing-improvement
-#'   tilt applied to empirical mode frequencies. Zero gives pure empirical
-#'   sampling.
+#' @param beta_fill Compatibility parameter retained in the control object. It is
+#'   validated and stored, but the current proposal implementation does not use it.
 #' @param max_nodes_per_iteration Maximum local nodes explored at each MCMC
 #'   iteration. The default reproduces the original node-by-node strategy.
 #' @param logical_repair_max_evaluations Maximum candidate assignments checked
@@ -41,6 +43,11 @@
 #' @param resume_batches Whether compatible completed batch checkpoints may be
 #'   reused when `correct_data()` receives a `batch_output_dir`.
 #' @return A list of class `sspice_correction_control`.
+#' @examples
+#' control <- correction_control(seed = 123L, use_parallel = FALSE)
+#' control$max_iterations
+#' control$final_temperature
+#'
 #' @export
 correction_control <- function(
     routing_weight = 1,

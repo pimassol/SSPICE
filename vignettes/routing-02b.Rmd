@@ -18,14 +18,11 @@ Routing metadata describe variable order, domains represented in the graph,
 logical groups and jumps. A missing response may reflect an inactive question
 or an omission: the path distinguishes these cases.
 
-The conceptual structure follows Pierpaolo Massoli, *Graph Theory for
-Modelling a Survey Questionnaire*, Section 3, Tables 1 and 3, in
-`Q2008-3-14(4).pdf`. This guide documents the inspected SSPICE implementation:
-historical conventions are not presented as current features when the code
-interprets them differently. The examples were constructed for this guide;
-they do not reproduce a real questionnaire. Auxiliary-variable definitions
-and logical edits are outside this vignette's scope. OR and XOR groups are
-part of routing and are covered here.
+This guide describes the routing format supported by SSPICE 0.1.0.
+Examples are independent of the bundled questionnaire. Auxiliary variables
+and semantic edits are documented in [Metadata and external sources](metadati-02.html).
+The framework is described in Massoli (2026), *An Integrated Framework for
+Rule-Based Data Editing*, https://arxiv.org/abs/2610.16947.
 
 # Physical format and row order
 
@@ -95,6 +92,9 @@ For example, `SCELTA;3;1;3;0;0;.;.` declares 1, 2 and 3, while
 `FLAG;1;1;1;0;0;.;.`. In routing, an observed zero does not generally mean
 missing; OR members, however, follow a specific convention.
 
+The dedicated [Item mapping](item-mapping-02c.html) guide provides a complete
+example with irregular codes, a jump, checks, correction and exports.
+
 `items_mapping.csv` stores a correspondence between codes of the same
 variable, not between items and column names:
 
@@ -110,14 +110,31 @@ value 21. The project contains a more extensive mapping for FASE.
 `build_DAG()` does not receive this file: it constructs the graph from routing
 metadata. Subsequent functions accepting item mapping use it separately.
 
-**Limitation of the inspected version:** recoding steps are not uniform across
-all functions. `check_all_paths()` contains data substitution from the second
-to the third column, sequential substitutions, and a reference to
-`mapping$old`, which is absent from the header shown above. Therefore, do not
-assume that changing a mapping table automatically makes every representation
-equivalent. For new irregular codes, verify the entire correspondence on known
-records, including jumps, rather than changing a validated project's mapping
-blindly. Documentation does not fix these code instructions.
+**Encoding contract.** Keep observed codes in the data and in VAUX/LEDIT
+predicates. Declare the equidistant structural codes in the routing metadata,
+including jump conditions. For example, observed codes `{10, 21, 99}` may map
+to structural codes `{10, 20, 30}`; the routing row then declares three modes,
+minimum 10 and maximum 30. A jump for observed 21 uses structural code 20.
+The alternative structural domain `{1, 2, 3}` uses minimum 1 and maximum 3.
+
+At the checking boundary, each observed code is looked up once in column 3
+and translated to column 2, then scaled to a dummy position. Missing values
+remain missing. The records and routing table are not rewritten. The
+canonical checker and correction oracle use this same encoding. Correction
+domains and generated RULES/VARDOM retain observed codes; gate selection
+translates them internally when comparing routing jump conditions.
+
+For each mapped variable present in the DAG, supply a complete one-to-one
+mapping covering its structural domain. Duplicate codes, incompatible domains,
+and observed codes absent from the mapping raise an error. A metadata file
+may also contain variables outside the current DAG. Header-only mapping files
+remain valid when no recoding is needed. Mapping does not turn the routing
+check into a general numeric-domain validator.
+
+After changing code or metadata, run `scripts/13_verify_item_mapping.R` before
+reusing results. The mapping patch changes the cache schema and correction
+checkpoint fingerprint so that results computed with the earlier encoding
+are not silently reused.
 
 ## Quantitative variables
 
@@ -205,7 +222,7 @@ in a complete questionnaire it may receive other incoming edges.
 
 ## Historical V6 = -1 convention
 
-The paper assigns -1 the meaning of no edge to the next row.
+A historical convention assigns -1 the meaning of no edge to the next row.
 `create_incidence_matrix()` instead creates the ordinary edge first and only
 processes jumps when V6 > 0. **Do not use -1 to suppress the edge in the current
 version:** this historical semantics is not implemented.
@@ -344,14 +361,6 @@ acyclicity. It does not exhaustively validate repeated pairs, out-of-domain
 categories, unknown references or all conventions listed here. Numeric
 conversion may turn unrecognized references into `NA`; absence of an error
 is not a guarantee of correctness.
-
-# Functions defining these rules
-
-The operational rules are derived from `build_DAG()`,
-`convert_routes_str2num()`, `create_incidence_matrix()`, `dummize()`,
-`coarse_groups_OR()`, `coarse_groups_XOR()`, `generate_groups_OR()`,
-`generate_groups_XOR()`, `clean_data()` and `check_all_paths()` in the inspected
-PROJECT copy. This revision changes the documentation, not those functions.
 
 <!-- SSPICE-QUESTIONNAIRE-EXAMPLE-BEGIN -->
 ## From questionnaire instructions to routing metadata

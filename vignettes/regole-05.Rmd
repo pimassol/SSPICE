@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Formal representation
 
@@ -52,3 +52,13 @@ These conventions are described in
 and item mapping match the intended specification. The absence of path errors
 does not establish the validity of every observed value. Passing sampled
 closure tests is not, by itself, an exhaustive proof over every possible subset.
+
+# Mapping at export
+
+Supply the same mapping used for record checks to the RULES and VARDOM
+generators. They translate structural categories back to observed codes:
+for example, a jump associated with routing code 20 can appear in a rule as
+`CHOICE(21)` when observed 21 maps to structural 20. The categorical VARDOM
+domain likewise lists the observed codes. The executable example in
+[Item mapping](item-mapping-02c.html) checks both exports against explicit
+expected values.

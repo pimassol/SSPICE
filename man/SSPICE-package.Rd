@@ -15,3 +15,10 @@ logical dependencies.
 
 }
 \keyword{internal}
+
+\details{
+SSPICE stands for Systematic Skip-Pattern Integrity and Consistency Engine.
+Start with the overview vignette and the repository README. The framework is
+described in Massoli (2026), An Integrated Framework for Rule-Based Data Editing,
+\url{https://arxiv.org/abs/2610.16947}.
+}

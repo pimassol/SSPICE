@@ -19,7 +19,7 @@ build_DAG(
 \item{routing}{Either the path to a routing CSV file or a data frame
 containing the routing metadata.}
 
-\item{separator}{Field separator used when `routing` is a file path.}
+\item{separator}{Field separator used when \code{routing} is a file path.}
 
 \item{na_strings}{Character values interpreted as missing values when
 reading a routing file.}
@@ -39,9 +39,9 @@ in each graph partition.}
 diagnostics. The last graph node is used by default.}
 }
 \value{
-An object of class `sspice_dag`. It contains the original and
+An object of class \code{sspice_dag}. It contains the original and
   transformed routing metadata, node names, the transposed incidence matrix
-  `Bt`, the adjacency matrix `A`, and optional node-level and graph-level
+  \code{Bt}, the adjacency matrix \code{A}, and optional node-level and graph-level
   diagnostics.
 }
 \description{

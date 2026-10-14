@@ -16,60 +16,11 @@ check_all_paths <- function(dset_data,
  
   vn_route <- colnames(Bt)
   
-  # Costruzione percorso completo e lettura file CSV di mappatura ---
   mapping_file <- file.path(path.items.maps, items.maps)
-  item_map <- read.csv(mapping_file, stringsAsFactors = FALSE, header = TRUE)
-  
-  # Ricodifica di min_item e max_item nel file di routing
-  for (i in 1:nrow(routes)) {
-    varname <- vn_route[routes[i, 1]]
-    if (varname %in% item_map[, 1]) {
-      mapping <- item_map[item_map$varname == varname, ]
-    
-      # Ricodifica min
-      old_min <- routes[i, 3]
-      new_min <- mapping[mapping[, 3] == old_min, 2]
-      if (length(new_min) == 1) routes[i, 3] <- new_min
-    
-      # Ricodifica max
-      old_max <- routes[i, 4]
-      new_max <- mapping[mapping$old == old_max, 2]
-      if (length(new_max) == 1) routes[i, 4] <- new_max
-    }
-  }
-
-  # Ricodifica delle modalità nei salti (colonne 7, 9, 11, ...)
-  jump_cols <- seq(7, ncol(routes), by = 2)
-
-  for (col in jump_cols) {
-    for (i in 1:nrow(routes)) {
-      if (!is.na(routes[i, col]) && routes[i, col] != ".") {
-        from_var <- routes[i, 1]
-        old_code <- routes[i, col]
-        mapping <- item_map[item_map[, 1] == from_var, ]
-        new_code <- mapping[mapping[, 3] == old_code, 2]
-        if (length(new_code) == 1) {
-          routes[i, col] <- new_code
-        }
-      }
-    }
-  }
-  
-  # Applicazione della mappatura ai dati nel dataframe di input
-  for (v in unique(item_map[, 1])) {
-    if (v %in% names(dset_data)) {
-      mapping <- item_map[item_map[, 1] == v, ]
-      for (j in 1:nrow(mapping)) {
-        matched_rows <- (
-          !is.na(dset_data[[v]]) &
-            as.character(dset_data[[v]]) ==
-              as.character(mapping[j, 2])
-        )
-        dset_data[matched_rows, v] <- mapping[j, 3]
-      }
-      dset_data[[v]] <- as.numeric(dset_data[[v]])
-    }
-  }
+  item_map <- .sspice_read_item_mapping(mapping_file)
+  .sspice_validate_item_mapping(
+    item_map, vn_route, pmax(1, abs(routes[, 2L])), routes[, 3L], routes[, 4L]
+  )
 
   # numero di variabili del dataset
   nvars <- ncol(dset_data)
@@ -94,7 +45,11 @@ check_all_paths <- function(dset_data,
   Ydummy <- matrix(0, nrecs, nitems)
   
   for (i in 1:nrecs) {
-    Ydummy[i, ] <- dummize_vector(dset_data[i, ], no_items)
+    Ydummy[i, ] <- dummize_vector(
+      .sspice_routing_positions(as.list(dset_data[i, ]), no_items,
+                                min_item, max_item, item_map),
+      no_items
+    )
   }
   
   # inizializzazione matrice per report errori

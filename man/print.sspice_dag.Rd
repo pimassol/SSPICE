@@ -7,12 +7,12 @@
 \method{print}{sspice_dag}(x, ...)
 }
 \arguments{
-\item{x}{An object created by [build_DAG()].}
+\item{x}{An object created by \code{\link{build_DAG}}.}
 
 \item{...}{Additional arguments currently ignored.}
 }
 \value{
-`x`, invisibly.
+\code{x}, invisibly.
 }
 \description{
 Print an SSPICE DAG

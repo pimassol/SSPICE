@@ -17,7 +17,7 @@ cached_routing_check(
 )
 }
 \arguments{
-\item{data}{Record-level data passed to [routing_check()].}
+\item{data}{Record-level data passed to \code{\link{routing_check}}.}
 
 \item{dag}{Extended SSPICE DAG.}
 
@@ -32,14 +32,14 @@ cached_routing_check(
 \item{input_files}{Named character vector of files on which the artifact
 depends.}
 
-\item{cache_policy}{One of `"auto"`, `"refresh"`, `"readonly"`, or
-`"off"`.}
+\item{cache_policy}{One of \code{"auto"}, \code{"refresh"}, \code{"readonly"}, or
+\code{"off"}.}
 
 \item{check_function}{Optional routing-check implementation. Intended for
-package testing; by default SSPICE's `routing_check()` is used.}
+package testing; by default SSPICE's \code{routing_check()} is used.}
 }
 \value{
-A list containing `result`, `manifest`, and cache diagnostics.
+A list containing \code{result}, \code{manifest}, and cache diagnostics.
 }
 \description{
 The cache is reused only when its manifest matches the current input files,

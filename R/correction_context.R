@@ -44,6 +44,7 @@
         )
       )
       if (is.na(observed)) return(FALSE)
+      observed <- .sspice_map_route_values(observed, predecessor, dag$item_mapping)
       scaled <- item_scaling(
         observed,
         metadata$n_items[index],
@@ -57,7 +58,8 @@
   unique(metadata$predecessor)
 }
 
-.sspice_gate_target <- function(gate, value, routes) {
+.sspice_gate_target <- function(gate, value, routes, variable = NULL,
+                                item_mapping = NULL) {
   if (length(gate) != 1L || is.na(gate) || gate < 1L) {
     return(NA_integer_)
   }
@@ -65,6 +67,9 @@
   default_target <- gate + 1L
   if (length(value) != 1L || is.na(value)) {
     return(default_target)
+  }
+  if (!is.null(variable)) {
+    value <- .sspice_map_route_values(value, variable, item_mapping)
   }
   route_dimensions <- dim(routes)
   if (is.null(route_dimensions) ||
@@ -108,7 +113,8 @@
   for (candidate in rev(sort(indices))) {
     value <- record[[candidate]][1L]
     if (is.na(value)) next
-    target <- .sspice_gate_target(candidate, value, dag$routes_numeric)
+    target <- .sspice_gate_target(candidate, value, dag$routes_numeric,
+                                 dag$varnames[candidate], dag$item_mapping)
     if (!is.na(target) && target > node) return(candidate)
   }
   NA_integer_
@@ -117,7 +123,8 @@
 .sspice_jump_segment <- function(gate, record, dag, value = NULL) {
   if (is.null(value)) value <- record[[gate]][1L]
   if (is.na(value)) return(integer())
-  target <- .sspice_gate_target(gate, value, dag$routes_numeric)
+  target <- .sspice_gate_target(gate, value, dag$routes_numeric,
+                               dag$varnames[gate], dag$item_mapping)
   if (is.na(target) || target <= gate + 1L || target > ncol(record)) {
     return(integer())
   }
@@ -141,7 +148,9 @@
   target <- .sspice_gate_target(
     variable_index,
     value,
-    dag$routes_numeric
+    dag$routes_numeric,
+    variable,
+    dag$item_mapping
   )
   segment_indices <- .sspice_jump_segment(
     variable_index,

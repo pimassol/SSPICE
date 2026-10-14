@@ -136,6 +136,24 @@ create_vardom <- function(routes_df,
 
   layout_maximum <- ifelse(routes_df[, 4] == 0, 1, routes_df[, 4])
   len_var <- floor(log10(layout_maximum)) + 1
+  # SSPICE-MAPPED-LAYOUT-FIX
+  # Fixed-width fields must accommodate observed dataset codes.
+  for (i in seq_len(nrow(vardom))) {
+    rows <- trimws(as.character(item_map[[1L]])) ==
+      as.character(vardom$varname[i])
+    if (!any(rows)) next
+    codes <- suppressWarnings(as.numeric(
+      as.character(item_map[[3L]][rows])
+    ))
+    if (anyNA(codes) || any(!is.finite(codes)) ||
+        any(codes != trunc(codes))) {
+      stop('VARDOM mapped codes must be finite integers.',
+           call. = FALSE)
+    }
+    len_var[i] <- max(nchar(format(
+      codes, scientific = FALSE, trim = TRUE
+    )))
+  }
   pos_i <- cumsum(c(1, utils::head(len_var, -1L)))
 
   vardom$pos_i <- pos_i

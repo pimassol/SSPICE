@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Preparing and checking data
 
@@ -58,3 +58,20 @@ violations in the analysed dataset. A matching key-column name is not enough.
 Do not associate synthetic violation ground truth with the real questionnaire
 data. Without a consistent reference, report localization results without
 supervised accuracy metrics.
+
+# Reading the check object
+
+`routing_check()` returns `full_report`, `summary_by_rec` and
+`summary_by_var`. The full report contains one row per reported violation,
+including the record key, `varname_label`, `routevar_label`, `errcode` and
+`message`. When logical edits are requested, `violation_source` distinguishes
+ROUTING from LOGICAL_EDIT. This column is not added in routing-only mode.
+
+The record summary groups by identifier and message. Therefore its row count
+is not necessarily the number of inconsistent records. Count distinct keys
+in `full_report` instead. Consistent records are absent from these violation
+summaries. See the overview's standalone example for a complete call.
+
+The current checker requires a mapping CSV even when no recoding is needed;
+a header-only file with `varname,item_route,item_dataset` is sufficient.
+Numeric IDs must remain unique and unchanged throughout preparation.

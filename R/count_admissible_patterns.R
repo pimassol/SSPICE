@@ -3,6 +3,14 @@
 #' Uses dynamic programming and arbitrary-precision integers to count all
 #' record patterns compatible with the modal transitions represented by `Bt`.
 #'
+#' @details
+#' Inspect \code{n_admissible_patterns} and
+#' \code{n_all_unrestricted_patterns}, stored as arbitrary-precision integers.
+#' Use \code{as.character()} to display their full values without conversion to
+#' floating point. \code{n_memo_states} describes the memoized computation.
+#' Counts concern structural patterns represented by the DAG, not all possible
+#' numeric or textual values in the original questionnaire.
+#'
 #' @param dag A DAG object produced by the SSPICE DAG-building pipeline.
 #' @param root_variables Optional root-variable names or indices. By default,
 #'   roots are inferred from `Bt`.
@@ -10,6 +18,15 @@
 #' @param verbose Whether to print a short execution summary.
 #'
 #' @return An object of class `sspice_admissible_pattern_count`.
+#' @examples
+#' routes <- data.frame(V1 = c("ID", "Q", "END"),
+#'   V2 = c(1, 2, 1), V3 = c(1, 1, 1), V4 = c(9999, 2, 1),
+#'   V5 = 0, V6 = 0, V7 = NA, V8 = NA)
+#' dag <- build_DAG(routes, analyze = FALSE)
+#' x <- data.frame(ID = 1:2, Q = c(1, 2), END = c(1, 1))
+#' counts <- count_admissible_patterns(dag, verbose = FALSE)
+#' as.character(counts$n_admissible_patterns)
+#'
 #' @export
 count_admissible_patterns <- function(
   dag,

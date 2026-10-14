@@ -26,7 +26,7 @@
 }
 
 .sspice_domains_from_routes <- function(
-    routes, variable_names, data = NULL, donor_data = NULL) {
+    routes, variable_names, data = NULL, donor_data = NULL, item_mapping = NULL) {
   if (is.null(routes) || ncol(routes) < 4L) {
     stop("Routing metadata must contain at least four columns.", call. = FALSE)
   }
@@ -69,6 +69,12 @@
         data = data,
         donor_data = donor_data
       )
+    }
+  }
+  if (!is.null(item_mapping)) {
+    for (variable in intersect(variable_names, item_mapping$variable)) {
+      pairs <- item_mapping[item_mapping$variable == variable, , drop = FALSE]
+      result[[variable]] <- pairs$old[order(pairs$new)]
     }
   }
   result

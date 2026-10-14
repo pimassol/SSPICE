@@ -15,13 +15,13 @@ generate_admissible_records(
 )
 }
 \arguments{
-\item{dag}{A DAG object produced by `build_DAG()`.}
+\item{dag}{A DAG object produced by \code{build_DAG()}.}
 
 \item{n_records}{Number of records to generate.}
 
 \item{id_col}{Optional record identifier represented in the DAG.}
 
-\item{items_mapping_file}{Optional path to `items_mapping.csv`.}
+\item{items_mapping_file}{Optional path to \code{items_mapping.csv}.}
 
 \item{seed}{Random seed.}
 
@@ -30,7 +30,7 @@ generate_admissible_records(
 \item{max_attempts}{Maximum attempts allowed for each record.}
 }
 \value{
-A data frame whose columns follow `dag$varnames`.
+A data frame whose columns follow \code{dag$varnames}.
 }
 \description{
 Internal generator used to create controlled data for routing and

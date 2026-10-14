@@ -15,7 +15,7 @@ check_logical_edits(data, id_col, logical_edit_names)
 }
 \value{
 A report compatible with the full report returned by
-  `routing_check()`.
+  \code{routing_check()}.
 }
 \description{
 Internal helper that reports every missing logical-edit value independently

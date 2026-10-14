@@ -16,7 +16,7 @@ A square directed adjacency matrix.
 }
 \description{
 Builds a directed adjacency matrix using the signs of the incidence
-coefficients: `+1` identifies a source node and `-1` identifies a target
+coefficients: \code{+1} identifies a source node and \code{-1} identifies a target
 node. This also preserves the direction of backward edges, allowing cycles
 to be detected correctly.
 }

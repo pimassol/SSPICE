@@ -4,6 +4,14 @@
 #' the resulting variables to the numeric representation used by SSPICE, and
 #' verifies their alignment with a graph created by [build_DAG()].
 #'
+#' @details
+#' \code{data_original} retains the input; \code{data_with_VAUX},
+#' \code{data_with_VOR}, and \code{data_with_VOR_and_VXOR} retain intermediate
+#' representations. \code{vaux_metadata} holds auxiliary rules and
+#' \code{varnames} gives the aligned names. Use \code{result$data} for checking.
+#' Text can become presence indicators and logical-group members can become
+#' canonical nodes; the final data are not a lossless copy of the questionnaire.
+#'
 #' @param data Either a data frame or the path to a CSV file containing the
 #'   record-level data.
 #' @param dag Either an object created by [build_DAG()] or the path to an RDS
@@ -19,6 +27,15 @@
 #' @return An object of class `sspice_prepared_data`. Its `data` element is
 #'   the final numeric data frame aligned with the DAG. Intermediate results
 #'   are retained in the remaining elements.
+#'
+#' @examples
+#' routes <- data.frame(V1 = c("ID", "Q", "END"),
+#'   V2 = c(1, 2, 1), V3 = c(1, 1, 1), V4 = c(9999, 2, 1),
+#'   V5 = 0, V6 = 0, V7 = NA, V8 = NA)
+#' dag <- build_DAG(routes, analyze = FALSE)
+#' x <- data.frame(ID = 1:2, Q = c(1, 2), END = c(1, 1))
+#' prepared <- prepare_data(x, dag)
+#' prepared$data
 #'
 #' @export
 prepare_data <- function(

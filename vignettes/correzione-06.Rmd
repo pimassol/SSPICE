@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Extended DAG and initial partition
 
@@ -44,6 +44,19 @@ variables whose category is locked. An active exogenous auxiliary variable
 retains its original category, whereas an inactive one may become `NA`.
 Logical groups have their own structural treatment; they are not generally
 synonymous with immutable columns.
+
+# Correction with mapped categories
+
+Supply the same `items_mapping_file` used for checking and export. Mapped
+variable domains and proposed values use observed dataset codes; the engine
+translates them when evaluating modal positions and jumps. Custom `domains`
+and `imputation_priors` for these variables must also use observed codes.
+Keep donor records in the same coding as the records to be corrected.
+
+The [Item mapping](item-mapping-02c.html) guide demonstrates correction with
+an irregularly coded variable held fixed. The mapping regression suite also
+tests filling a mapped variable while preserving its observed-code domain.
+VAUX/LEDIT predicates continue to refer to observed values.
 
 # Outputs and diagnosis
 
@@ -130,3 +143,40 @@ of initialization time, because some preparation may occur within
 the timed correction call. Measuring individual preparation stages
 requires separate timing.
 <!-- SSPICE-STARTUP-NOTE-END -->
+
+# Controls and returned objects
+
+| Control | Default and meaning |
+|:--|:--|
+| `max_iterations = NULL` | One iteration per DAG node as the record-specific maximum; termination may occur sooner |
+| `initial_temperature = NULL` | Maximum of the final temperature, the floored initial constraint score, and `lambda_change * max(penalty_fill, penalty_blank, penalty_flip)` |
+| `final_temperature = 1e-4` | Positive temperature used after cooling |
+| `cooling_fraction = 0.9` | Fraction of iterations used for linear cooling |
+| `use_parallel = FALSE` | Sequential execution unless explicitly enabled |
+| `parallel_workers = NULL` | Automatic worker choice when parallel execution is enabled, capped by record count |
+| `beta_fill = 1` | Retained compatibility control; stored and validated but not consumed by the supplied proposal code |
+
+`beta_fill` is retained for compatibility; changing it does not alter proposals
+in this source version.
+
+The default maximum iteration count is a computational budget, not a guarantee
+of feasibility or global minimum change. Increasing it can increase run time.
+Keep diagnostic weights positive when interpreting zero weighted violations
+as logical feasibility; zero weights can hide their corresponding terms.
+
+`correct_data()` returns a list with class `sspice_correction_result`:
+
+| Component | Use |
+|:--|:--|
+| `corrected_data` | Corrected rows in the prepared representation |
+| `record_summary` | Per-record status and diagnostics; inspect `resolved` |
+| `unresolved_records` | Subset of the summary for unresolved records |
+| `final_routing_check` | Final record/variable violation reports |
+| `donor_diagnostics` | Counts of supplied and retained donors |
+| `control`, `strata`, `immutable_variables` | Effective correction settings |
+| `parallel`, `batch_manifest` | Workers, batches and checkpoint reuse |
+
+Step 10 performs the initial EXACT/ERRONEOUS split and applies the pilot limit.
+Calling `correct_data()` directly does not reproduce that script-level
+selection automatically. Its `corrected_data` corresponds to the rows passed
+to the function; Step 10 writes the reconstructed questionnaire output.

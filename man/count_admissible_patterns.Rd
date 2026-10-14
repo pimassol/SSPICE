@@ -15,16 +15,35 @@ count_admissible_patterns(
 \item{dag}{A DAG object produced by the SSPICE DAG-building pipeline.}
 
 \item{root_variables}{Optional root-variable names or indices. By default,
-roots are inferred from `Bt`.}
+roots are inferred from \code{Bt}.}
 
 \item{max_memo_states}{Maximum number of memoized states.}
 
 \item{verbose}{Whether to print a short execution summary.}
 }
 \value{
-An object of class `sspice_admissible_pattern_count`.
+An object of class \code{sspice_admissible_pattern_count}.
 }
 \description{
 Uses dynamic programming and arbitrary-precision integers to count all
-record patterns compatible with the modal transitions represented by `Bt`.
+record patterns compatible with the modal transitions represented by \code{Bt}.
+}
+
+\details{
+Inspect \code{n_admissible_patterns} and
+\code{n_all_unrestricted_patterns}, stored as arbitrary-precision integers.
+Use \code{as.character()} to display their full values without conversion to
+floating point. \code{n_memo_states} describes the memoized computation.
+Counts concern structural patterns represented by the DAG, not all possible
+numeric or textual values in the original questionnaire.
+}
+
+\examples{
+routes <- data.frame(V1 = c("ID", "Q", "END"),
+  V2 = c(1, 2, 1), V3 = c(1, 1, 1), V4 = c(9999, 2, 1),
+  V5 = 0, V6 = 0, V7 = NA, V8 = NA)
+dag <- build_DAG(routes, analyze = FALSE)
+x <- data.frame(ID = 1:2, Q = c(1, 2), END = c(1, 1))
+counts <- count_admissible_patterns(dag, verbose = FALSE)
+as.character(counts$n_admissible_patterns)
 }

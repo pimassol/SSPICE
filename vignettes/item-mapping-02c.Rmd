@@ -1,0 +1,322 @@
+---
+title: "02c — Item mapping: observed codes and routing codes"
+author: "Pierpaolo Massoli"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{02c — Item mapping: observed codes and routing codes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+# Purpose and place in the workflow
+
+A categorical variable may have three observed codes, such as `10`, `21`
+and `99`. These are three categories. The largest code is not the number
+of categories. SSPICE represents their outgoing transitions with three
+modal positions, while routing metadata describe an equidistant structural
+domain. Item mapping connects the observed codes to that domain.
+
+Read [Building the routing file](routing-02b.html) first. This guide explains
+which codes belong in each input, how the correspondence is used, and how
+to check it before running the application pipeline. Its executable example
+uses synthetic records and a temporary CSV; it needs the patched SSPICE
+package, but no questionnaire data or external files.
+
+# Three representations of the same category
+
+| Meaning | Observed dataset code | Structural routing code | Dummy position |
+|:--|--:|--:|--:|
+| First category | 10 | 10 | 1 |
+| Second category | 21 | 20 | 2 |
+| Third category | 99 | 30 | 3 |
+
+The mapping file is a comma-separated CSV with a header:
+
+```text
+varname,item_route,item_dataset
+CHOICE,10,10
+CHOICE,20,21
+CHOICE,30,99
+```
+
+Each row pairs one routing code with one observed code **for the variable
+named in that row**. Keep this column order. Codes are numeric; use separate
+rows for each category and repeat the variable name. Different variables
+can reuse the same numeric codes.
+
+For this mapping, the beginning of the routing row is:
+
+```text
+CHOICE;3;10;30;0;...
+```
+
+The fields declare the variable name, three modes, minimum structural code
+10 and maximum structural code 30. The implied structural codes are
+`10, 20, 30`. The row `CHOICE;3;10;99;0;...` would instead imply
+`10, 54.5, 99`: it does not describe the mapping above. Do not use the
+observed minimum and maximum when they disagree with the chosen structural
+domain, and do not declare 99 modes merely because one observed code is 99.
+
+An equally valid choice is structural codes `1, 2, 3`. It requires mapping
+rows `(CHOICE,1,10)`, `(CHOICE,2,21)`, `(CHOICE,3,99)` and routing bounds 1
+and 3. Either structural coding produces the same three dummy positions.
+
+For a structural domain with `n > 1` modes, minimum `a` and maximum `b`,
+valid structural codes have step `(b - a)/(n - 1)`. After lookup, their dummy
+position is `1 + (item_route - a)/step`. A code of 20 in the first example
+therefore activates position 2, not position 20.
+
+# Which codes to use where
+
+| Input or output | Coding convention |
+|:--|:--|
+| Questionnaire and donor records | Observed dataset codes |
+| Routing domain bounds and jump conditions | Structural routing codes |
+| Mapping column 2, `item_route` | Structural routing codes |
+| Mapping column 3, `item_dataset` | Observed dataset codes |
+| VAUX/LEDIT predicates on the mapped input variable | Observed dataset codes |
+| Corrected records and routing report values | Observed dataset codes |
+| Generated RULES and VARDOM, when supplied with this mapping | Observed dataset codes |
+| Internal categorical dummy representation | Positions `1, ..., n` |
+
+`build_DAG()` receives routing metadata, not the mapping CSV. Thus the DAG
+must already specify structural domains and jumps consistently.
+`prepare_data()` does not apply this categorical mapping; its other
+normalizations, such as logical-group processing, are described in
+[Data preparation and checks](controlli-04.html).
+
+The canonical checker and correction oracle translate observed codes to
+routing codes in a working representation, then to dummy positions. They
+do not recode the input dataset or rewrite the routing table. Lookup uses
+the original value once. For example, observed codes `2, 3, 4` mapped to
+structural codes `1, 2, 3` do not trigger successive substitutions when the
+two sets overlap. Missing values remain missing and activate no categorical
+mode; whether a missing value is a violation depends on the routing path.
+
+The correction engine uses observed codes for mapped variable domains,
+donor values and proposed record values. It translates a proposed value
+when identifying an active predecessor or testing a jump. Explicit
+`domains` overrides and `imputation_priors` for a mapped variable must
+therefore also refer to its observed codes.
+
+# A jump, six records, and a correction
+
+Only the second category skips `DETAIL`. With structural codes `10, 20, 30`,
+the routing jump condition is **20**, although the corresponding observed
+value is **21**:
+
+```text
+CHOICE;3;10;30;0;1;20;END
+```
+
+The example below checks an independently specified expectation: records
+1–3 are correct; records 4 and 6 omit a required DETAIL, and record 5 fills
+DETAIL although it should be blank. Correction keeps CHOICE and END fixed
+and repairs DETAIL. The same experiment is run with both structural domains.
+
+```{r standalone-item-mapping, eval=TRUE}
+local({
+  folder <- tempfile("sspice-mapping-guide-")
+  dir.create(folder)
+  on.exit(unlink(folder, recursive = TRUE), add = TRUE)
+  mapping_file <- file.path(folder, "items_mapping.csv")
+  observed <- c(10, 21, 99)
+  expected <- sort(c("4|DETAIL|-1", "5|DETAIL|1", "6|DETAIL|-1"))
+
+  for (structural in list(c(10, 20, 30), 1:3)) {
+    mapping <- data.frame(
+      varname = "CHOICE", item_route = structural,
+      item_dataset = observed
+    )
+    utils::write.csv(mapping, mapping_file, row.names = FALSE)
+
+    routes <- data.frame(
+      V1 = c("ID", "CHOICE", "DETAIL", "END"),
+      V2 = c(1, 3, 1, 1),
+      V3 = c(1, min(structural), 1, 1),
+      V4 = c(9999, max(structural), 1, 1),
+      V5 = 0, V6 = c(0, 1, 0, 0),
+      V7 = c(NA, structural[2], NA, NA),
+      V8 = c(NA, "END", NA, NA)
+    )
+    dag <- SSPICE::build_DAG(routes, analyze = FALSE)
+    original <- data.frame(
+      ID = 1:6, CHOICE = rep(observed, 2),
+      DETAIL = c(1, NA, 1, NA, 1, NA), END = 1
+    )
+    prepared <- SSPICE::prepare_data(original, dag)$data
+    stopifnot(isTRUE(all.equal(prepared$CHOICE, original$CHOICE)))
+
+    checked <- SSPICE::routing_check(
+      prepared, dag$routes_numeric, dag$Bt, "ID",
+      basename(mapping_file), dirname(mapping_file)
+    )
+    report <- checked$full_report
+    keys <- sort(paste(report$ID, report$varname_label,
+                       report$errcode, sep = "|"))
+    stopifnot(identical(keys, expected))
+    cat("\nStructural codes:", structural, "\n")
+    print(report[, c("ID", "varname_label", "errcode", "routeval")])
+
+    corrected <- SSPICE::correct_data(
+      prepared[4:6, , drop = FALSE], dag, record_id = "ID",
+      donor_data = prepared[1:3, , drop = FALSE],
+      immutable_variables = c("CHOICE", "END"),
+      items_mapping_file = mapping_file,
+      control = SSPICE::correction_control(
+        seed = 123L, max_iterations = 12L, use_parallel = FALSE
+      )
+    )
+    stopifnot(
+      isTRUE(all.equal(corrected$corrected_data$DETAIL, c(1, NA, 1))),
+      isTRUE(all.equal(corrected$corrected_data$CHOICE, observed)),
+      all(corrected$record_summary$resolved)
+    )
+    print(corrected$corrected_data)
+
+    # These internal generators are also used by the operational scripts.
+    # getFromNamespace is explicit: they are not exported public functions.
+    rules <- getFromNamespace("create_rules", "SSPICE")(
+      dag$Bt, dag$routes_numeric,
+      basename(mapping_file), dirname(mapping_file)
+    )
+    expected_rules <- c(
+      "CHOICE(10) DETAIL< )",
+      "CHOICE(21) DETAIL() END< )",
+      "CHOICE(99) DETAIL< )"
+    )
+    stopifnot(setequal(rules[startsWith(rules, "CHOICE(")], expected_rules))
+    print(rules[startsWith(rules, "CHOICE(")])
+    vardom <- getFromNamespace("create_vardom", "SSPICE")(
+      dag$routes_numeric, dag$Bt,
+      basename(mapping_file), dirname(mapping_file)
+    )$vardom
+    choice_domain <- vardom[vardom$varname == "CHOICE", , drop = FALSE]
+    stopifnot(identical(as.character(choice_domain$intervalli),
+      paste0(sprintf("%04d%04d", observed, observed), collapse = "")))
+    print(choice_domain)
+  }
+})
+```
+
+`routeval` in the error report refers to the observed value of the variable
+responsible for the transition. In the record that incorrectly fills DETAIL
+under the second category, this value is 21. The generated rule also refers
+to `CHOICE(21)`. Mapping is an internal correspondence, not a request to
+rewrite the questionnaire records with codes 1–3 or 10–30.
+
+# VAUX and LEDIT retain the meaning of the original values
+
+A predicate referring to the second observed category of CHOICE must test
+`CHOICE = 21`. Writing `CHOICE = 20` would test a different observed value;
+the mapping file does not automatically rewrite VAUX or LEDIT statements.
+Likewise, a sum or other arithmetic expression involving CHOICE uses its
+observed values. Mapping category labels does not redefine arithmetic.
+
+VAUX and LEDIT are evaluated on the records using their own metadata.
+Their resulting variables have their own domains and routing nodes. A mapping
+for CHOICE does not implicitly map a derived VAUX or LEDIT variable. For
+example, a VAUX may assign category 1 when CHOICE is 21 and category 2 when
+CHOICE is 10 or 99; those output codes belong to the VAUX variable.
+
+The regression script `scripts/13_verify_item_mapping.R` includes matched
+VAUX and LEDIT examples in observed and normalized coding. The comparison
+translates the predicates as well as the data. It also tests routing,
+correction, exports, missing values and overlapping codes. See
+[Metadata and external sources](metadati-02.html) for the statement format,
+assignment order and missing-operand rules; mapping does not change them.
+
+# The bundled FASE variable
+
+FASE is a categorical variable with ten observed modalities. The bundled
+mapping specifies:
+
+| Observed FASE | Structural code | Dummy position |
+|--:|--:|--:|
+| 10 | 10 | 1 |
+| 20 | 20 | 2 |
+| 21 | 30 | 3 |
+| 25 | 40 | 4 |
+| 50 | 50 | 5 |
+| 55 | 60 | 6 |
+| 60 | 70 | 7 |
+| 70 | 80 | 8 |
+| 80 | 90 | 9 |
+| 100 | 100 | 10 |
+
+Its structural declaration starts with `FASE;10;10;100`. The verification
+script checks all ten positions in both the canonical checker and the
+correction oracle. This is a controlled encoding test, not a rerun of
+correction on the application dataset. The separate CHOICE example tests a
+category-dependent jump, which an encoding-only example cannot establish.
+
+# Supplying the file consistently
+
+For the project scripts, set `config$items_mapping_file` in
+`scripts/00_config.R`. The working example path is
+`data-raw/metadata/items_mapping.csv`; the packaged copy is under
+`inst/extdata/SSPICE/metadata/`. Editing one copy does not update the other.
+Check that the workflow is reading the intended file.
+
+| Function or workflow | Mapping input |
+|:--|:--|
+| `build_DAG()` | None; routing metadata already use structural codes |
+| `prepare_data()` | No categorical recoding through this CSV |
+| `routing_check()` | `items.maps = basename(file)`, `path.items.maps = dirname(file)` |
+| `correct_data()` | `items_mapping_file = file` |
+| Step 04, RULES/VARDOM generation | The same mapping supplied to the generators |
+| VAUX/LEDIT evaluation | Predicates already use observed codes; no implicit predicate translation |
+
+For a workflow without recoding, a CSV containing only
+`varname,item_route,item_dataset` is a consistent way to supply an empty
+mapping, including to functions that expect a file. Unmapped categorical
+variables still need codes consistent with their structural domains.
+
+# Validation and common mistakes
+
+For each mapped variable in the DAG, the patched checker requires a complete
+one-to-one correspondence with the structural domain. The shared encoding
+validates the first three columns, numeric codes, unique codes on each side,
+and agreement with the declared number of modes and structural bounds.
+A valid file may include mappings for variables outside a particular DAG;
+those variables are not encoded by that DAG.
+
+| Symptom or mistake | What to check |
+|:--|:--|
+| Mapping file not found | Full path, or the filename/directory pair supplied to the checker |
+| Duplicate codes | Each observed code and structural code must occur once per mapped variable |
+| Routing domain disagreement | Complete mapping; number of modes; structural minimum, maximum and spacing |
+| Observed code absent from mapping | Input values and missing-value conventions; add a legitimate category consistently to routing and mapping |
+| Jump follows the wrong category | Jump conditions must use structural codes, not irregular observed codes |
+| VAUX/LEDIT predicate does not match | Predicates must use observed values; mapping does not rewrite statements |
+| A mapping seems to be ignored | Exact variable name, active file path, and mapping supplied to the function |
+
+Use actual `NA` for missing data. A numeric sentinel such as 99 remains an
+observed category when it is declared as one; it is not automatically missing.
+Do not recode the input data yourself and then pass a mapping that expects
+the original codes: overlapping values make such double conversion ambiguous.
+
+The validation above is not a universal data-domain check. In particular,
+the existing scaling convention for unmapped categories is not a guarantee
+that every out-of-domain numeric value is rejected. This guide concerns
+numeric categorical mappings; string fields, quantitative presence states
+and OR/XOR normalization follow the separate routing conventions.
+
+When the mapping or routing specification changes, regenerate dependent
+artifacts and recheck records with the updated inputs before interpreting
+correction results. The mapping patch invalidates the earlier cache schema
+and correction checkpoint fingerprint; that does not recompute or validate
+previously exported results automatically.
+
+From the source-project root, run:
+
+```{r verify-mapping-project, eval=FALSE}
+source("scripts/13_verify_item_mapping.R")
+```
+
+Read [Domains and rules](regole-05.html) and [Record correction](correzione-06.html)
+for the next workflow steps.

@@ -7,12 +7,12 @@
 \method{print}{sspice_prepared_data}(x, ...)
 }
 \arguments{
-\item{x}{An object created by [prepare_data()].}
+\item{x}{An object created by \code{\link{prepare_data}}.}
 
 \item{...}{Additional arguments currently ignored.}
 }
 \value{
-`x`, invisibly.
+\code{x}, invisibly.
 }
 \description{
 Print prepared SSPICE data

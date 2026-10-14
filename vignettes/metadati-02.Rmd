@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> Operational examples assume that the SSPICE project root is the working directory. They are not executed when building the vignette because they require the project data.
+> Operational examples assume that the SSPICE project root is the working directory. Operational chunks are not executed when building the vignette because they require the project data. Standalone chunks explicitly marked `eval=TRUE` are exceptions.
 
 # Input files
 
@@ -21,7 +21,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 | `routing_file.csv` | Nodes, categories and routing dependencies | Consistent identifiers and no cycles |
 | `vaux_rules.csv` | Auxiliary-variable definitions | Consistent conditions and assigned categories |
 | `logical_edit_rules.csv` | Logical constraints between variables | Consistent categories and operators |
-| `items_mapping.csv` | Correspondence between routing codes and observed codes for each variable | Check recoding direction and application in the functions used |
+| `items_mapping.csv` | Correspondence between routing codes and observed codes for each variable | See [Item mapping](item-mapping-02c.html) for the coding contract and an executable example |
 | `data-raw/input/questionnaire_data.csv` | Responses to be checked | Agreed record key and missing-value codes |
 | `data-raw/external/*.csv` | Additional information for exogenous auxiliary variables | Linkage key and uniqueness at the required level of observation |
 
@@ -210,3 +210,83 @@ extracting a sample, subset each source using the same keys and document links
 that were already absent from the source. After replacing sources, regenerate
 prepared data, checks and extended data, and verify cache validity before
 correction.
+
+# Defining semantic edits: `logical_edit_rules.csv`
+
+This is a headerless nine-column file separated by semicolons. The columns
+have the same roles V1--V9 as the VAUX table, but the LEDIT evaluator has
+its own semantics. Each edit must define both accepted categories 1 and 2.
+Both are valid outcomes: **2 does not mean error**. If no condition assigns
+an accepted category, the result remains `NA` and the edit is violated.
+Choose and document what the two categories mean for each edit.
+
+For example, require A + B = 100 when amounts are reported, and allow both
+amounts to be blank when the edit is inapplicable. Define category 2 first
+for the all-blank case, then category 1 for the total:
+
+```text
+LEDIT_TOTAL;2;A;;;BLANK;;;AND
+LEDIT_TOTAL;2;B;;;BLANK;;;NULL
+LEDIT_TOTAL;1;A;;;;;;+
+LEDIT_TOTAL;1;B;;;;;;=100
+```
+
+V4 and V5 are empty because A and B are input columns. V6 specifies an exact
+value or BLANK; V7 and V8 specify inclusive bounds instead. Arithmetic rows
+leave V6--V8 empty. V9 joins rows and closes a predicate with NULL or an
+arithmetic expression with a comparison. Keep each condition contiguous
+and use the same V1 and V2 throughout that condition.
+
+**Missing arithmetic operands are replaced by zero in the LEDIT evaluator.**
+Consequently A = 100 and B = NA satisfies the total in this example.
+If both amounts must be observed, define additional presence requirements.
+This differs from the VAUX arithmetic behavior described above.
+Logical conditions evaluating to NA do not assign a category. Conditions
+are processed in file order; the first matching condition wins. Later
+conditions cannot overwrite an assigned category. Avoid unintended overlaps.
+
+```{r standalone-ledit, eval=TRUE}
+local({
+  edits <- read.table(text = paste(
+    "LEDIT_TOTAL;2;A;;;BLANK;;;AND",
+    "LEDIT_TOTAL;2;B;;;BLANK;;;NULL",
+    "LEDIT_TOTAL;1;A;;;;;;+",
+    "LEDIT_TOTAL;1;B;;;;;;=100", sep = "\n"),
+    sep = ";", header = FALSE, colClasses = "character",
+    na.strings = character(0))
+  x <- data.frame(ID = 1:5, A = c(40, NA, 40, 100, NA),
+                  B = c(60, NA, 50, NA, 20))
+  create_edits <- getFromNamespace("create_logical_edit_variables", "SSPICE")
+  out <- create_edits(x, edits)
+  print(out)
+  stopifnot(identical(out$LEDIT_TOTAL, c(1, 2, NA_real_, 1, NA_real_)))
+  print(attr(out, "logical_edit_definitions"))
+})
+```
+
+The output categories are 1, 2, NA, 1, NA. The
+`logical_edit_definitions` attribute records the expressions and assignment
+counts. The internal evaluator is called explicitly here to illustrate the
+metadata; the operational entry point is Step 09, which also appends LEDIT
+nodes with accepted domain {1, 2} to the routing representation.
+
+For membership expressions, `IN(A,B)` compares the current variable with
+other columns in the same record, not with a list of numeric constants.
+`IN(BLANK)` tests missingness. Logical tokens include AND, OR, XOR and NOT;
+NOT in a connector position means AND NOT of the following predicate.
+For mixed arithmetic and logical groups the comparison connector has the
+form `>=5) AND (`. Do not copy the more permissive VAUX token syntax without
+checking it against the LEDIT parser.
+
+V4 specifies an external source basename and V5 its linkage key. External
+keys must be unique. Missing links remain missing, subject to the arithmetic
+zero convention above. If a referenced column already exists in the input,
+the evaluator retains that column; avoid conflicting source-column names.
+
+# Item mapping and semantic predicates
+
+[Item mapping](item-mapping-02c.html) explains the correspondence between
+observed categories and equidistant structural codes. Keep observed codes
+in the data and in predicates on those variables in VAUX/LEDIT metadata.
+Routing bounds and jump conditions use structural codes. Mapping does not
+rewrite semantic statements or change their arithmetic meaning.

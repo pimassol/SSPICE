@@ -319,7 +319,8 @@
     routes = dag$routes_numeric,
     variable_names = dag$varnames,
     data = original_data,
-    donor_data = donor_data
+    donor_data = donor_data,
+    item_mapping = dag$item_mapping
   )
   cache <- .sspice_build_donor_cache(
     donor_data = donor_data,
@@ -643,6 +644,26 @@
 #' and `minval < maxval` are `QUANTITATIVE`; all other variables are
 #' `QUALITATIVE`.
 #'
+#' @details
+#' The result contains \code{summary} (metric/value pairs),
+#' \code{variable_profile}, \code{record_summary}, \code{unresolved_records},
+#' \code{violations_before}, \code{violations_after}, \code{changes}, their
+#' record/variable summaries, \code{uncertainty} and
+#' \code{quantitative_structural_changes}.
+#'
+#' The editable-cell denominator is the number of distinct processed IDs times
+#' the number of non-ID columns not marked immutable. It is not limited to
+#' active questions or base variables. Changed-cell percentage is 100 times
+#' the number of changes divided by this denominator, or NA if it is zero.
+#'
+#' Categorical entropy uses natural logarithms; normalized entropy divides by
+#' the logarithm of positive support size (zero for support size at most one).
+#' These are post-hoc distributions at the final record, not confidence intervals
+#' or a replay of sampled proposals. User priors and domain overrides are not
+#' restored by this reconstruction. Inspect status and distribution source.
+#' No independent final validation is run: the supplied or stored final check
+#' is reused. See the quality vignette for interpretation.
+#'
 #' @param original_data Data frame before correction.
 #' @param correction_result Object returned by [correct_data()].
 #' @param dag SSPICE DAG used for correction.
@@ -682,6 +703,7 @@ correction_quality_report <- function(
   if (!inherits(correction_result, "sspice_correction_result")) {
     stop("correction_result must be an sspice_correction_result.", call. = FALSE)
   }
+  dag$item_mapping <- correction_result$item_mapping %||% dag$item_mapping
   corrected_data <- corrected_data %||% correction_result$corrected_data
   if (!is.data.frame(corrected_data)) {
     stop("corrected_data must be a data frame.", call. = FALSE)

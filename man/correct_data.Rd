@@ -25,15 +25,15 @@ correct_data(
 )
 }
 \arguments{
-\item{data}{Data frame to correct, already aligned with `dag`.}
+\item{data}{Data frame to correct, already aligned with \code{dag}.}
 
 \item{dag}{An SSPICE DAG or extended DAG.}
 
-\item{record_id}{Record identifier. If omitted, `dag$record_id` is used.}
+\item{record_id}{Record identifier. If omitted, \code{dag$record_id} is used.}
 
 \item{donor_data}{Optional data frame containing validated records.}
 
-\item{donor_data_validated}{Whether `donor_data` has already passed the
+\item{donor_data_validated}{Whether \code{donor_data} has already passed the
 complete DAG+ routing and logical-edit check.}
 
 \item{donor_cache}{Optional immutable cache built from the original valid
@@ -49,7 +49,7 @@ automatically and must not be supplied here.}
 
 \item{strata}{Variables used in addition to active DAG predecessors.}
 
-\item{imputation_method}{`donor`, `user_prior`, `uniform`, or a named vector.}
+\item{imputation_method}{\code{donor}, \code{user_prior}, \code{uniform}, or a named vector.}
 
 \item{imputation_priors}{Optional named list of named probability vectors.}
 
@@ -57,16 +57,16 @@ automatically and must not be supplied here.}
 
 \item{external_data_dir}{Directory containing external VAUX sources.}
 
-\item{items_mapping_file}{Optional complete path to `items_mapping.csv`.}
+\item{items_mapping_file}{Optional complete path to \code{items_mapping.csv}.}
 
-\item{control}{An object produced by [correction_control()].}
+\item{control}{An object produced by \code{\link{correction_control}}.}
 
 \item{batch_output_dir}{Optional directory for atomic per-batch checkpoints.
 Domains, donor distributions, caches, and the routing oracle are prepared
 once before batching and are never rebuilt between batches.}
 }
 \value{
-An object of class `sspice_correction_result`.
+An object of class \code{sspice_correction_result}.
 }
 \description{
 Correction is restricted to the local neighbourhood of reported routing or
@@ -111,3 +111,61 @@ the timed correction call. Measuring individual preparation stages
 requires separate timing.
 }
 % SSPICE-STARTUP-NOTE-END
+
+\details{
+\code{corrected_data} contains the supplied rows after correction in the
+prepared representation. \code{record_summary} contains per-record diagnostics
+and \code{resolved}; \code{unresolved_records} is its unresolved subset.
+\code{final_routing_check} contains the final violation reports.
+\code{donor_diagnostics} gives supplied and retained donor counts.
+\code{control}, \code{strata} and \code{immutable_variables} record settings;
+\code{parallel} and \code{batch_manifest} describe execution and checkpoints.
+
+The operational Step 10, rather than this function, performs the initial
+EXACT/ERRONEOUS partition and pilot selection. A finite stochastic search
+does not guarantee a feasible correction or a global minimum-change result.
+See the overview vignette for a complete standalone example.
+}
+
+\examples{
+local({
+  routes <- read.table(text = paste(
+    "ID;1;1;9999;0;0;.;.",
+    "GATE;2;1;2;0;1;1;END",
+    "DETAIL;2;1;2;0;0;.;.",
+    "END;1;1;1;0;0;.;.", sep = "\n"),
+    sep = ";", header = FALSE, na.strings = ".")
+  dag <- SSPICE::build_DAG(routes, analyze = FALSE)
+  raw <- data.frame(ID = 1:3, GATE = c(1, 2, 1),
+                    DETAIL = c(NA, 1, 1), END = c(1, 1, 1))
+  prepared <- SSPICE::prepare_data(raw, dag)
+
+  # The current checker requires a mapping file, even with no recoding.
+  mapping <- tempfile(fileext = ".csv")
+  on.exit(unlink(mapping), add = TRUE)
+  write.csv(data.frame(varname = character(), item_route = numeric(),
+                       item_dataset = numeric()), mapping, row.names = FALSE)
+  check <- SSPICE::routing_check(
+    prepared$data, dag$routes_numeric, dag$Bt, "ID",
+    basename(mapping), dirname(mapping)
+  )
+  print(check$full_report)
+  stopifnot(setequal(unique(check$full_report$ID), 3))
+
+  # Only the erroneous row is sent to correction. Donors are fixed.
+  result <- SSPICE::correct_data(
+    data = prepared$data[3, , drop = FALSE], dag = dag, record_id = "ID",
+    donor_data = prepared$data[1:2, , drop = FALSE],
+    items_mapping_file = mapping,
+    control = SSPICE::correction_control(
+      seed = 123L, max_iterations = 20L, use_parallel = FALSE
+    )
+  )
+  print(result$corrected_data)
+  print(result$record_summary)
+  print(result$unresolved_records)
+  stopifnot(identical(result$corrected_data$ID, prepared$data$ID[3]))
+  # Resolution is read from the final checks, not assumed from termination.
+  print(result$final_routing_check$full_report)
+})
+}
