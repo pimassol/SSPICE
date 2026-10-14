@@ -63,9 +63,7 @@ Variable measurement type is determined without heuristic interpretation:
 textual columns are \code{STRING}; non-textual routing nodes with \code{nitems == 1}
 and \code{minval < maxval} are \code{QUANTITATIVE}; all other variables are
 \code{QUALITATIVE}.
-}
 
-\details{
 The result contains \code{summary} (metric/value pairs),
 \code{variable_profile}, \code{record_summary}, \code{unresolved_records},
 \code{violations_before}, \code{violations_after}, \code{changes}, their

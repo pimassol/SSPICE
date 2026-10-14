@@ -639,12 +639,13 @@
 #' actions on quantitative variables. It never changes the correction result
 #' or any input record.
 #'
+#' @details
 #' Variable measurement type is determined without heuristic interpretation:
 #' textual columns are `STRING`; non-textual routing nodes with `nitems == 1`
 #' and `minval < maxval` are `QUANTITATIVE`; all other variables are
 #' `QUALITATIVE`.
 #'
-#' @details
+#'
 #' The result contains \code{summary} (metric/value pairs),
 #' \code{variable_profile}, \code{record_summary}, \code{unresolved_records},
 #' \code{violations_before}, \code{violations_after}, \code{changes}, their
