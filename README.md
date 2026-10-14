@@ -6,7 +6,7 @@ This repository contains SSPICE **0.1.0**, including package source code, functi
 
 ## Requirements and installation
 
-- R **4.1.0** or later.
+- R **4.2.0** or later.
 - Git to clone the repository.
 
 Clone the repository:
